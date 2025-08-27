@@ -1,0 +1,102 @@
+Resume Analyzer
+
+A web application that helps users analyze resumes for skills, experience, and other key metrics. Built using Next.js with Supabase for backend services.
+
+Features
+
+Upload and analyze resumes.
+
+Extract key skills and experience automatically.
+
+User authentication and authorization via Supabase.
+
+Clean, responsive UI built with modern web technologies.
+
+Project Structure
+
+.gitignore – Ignored files (.env, node_modules)
+
+app/ – Main application files
+
+middleware.ts – Middleware configuration
+
+next-env.d.ts – Next.js environment types
+
+package.json – Project dependencies
+
+package-lock.json – Dependency lock file
+
+supabaseClient.ts – Supabase client setup
+
+tsconfig.json – TypeScript configuration
+
+Getting Started
+Prerequisites
+
+Node.js (v18+ recommended)
+
+npm or yarn
+
+Supabase account for backend services
+
+Installation
+
+Clone the repository:
+git clone https://github.com/mission077/resume-analyzer.git
+cd resume-analyzer
+
+Install dependencies:
+npm install
+
+Create a .env file (local, not committed) with your Supabase credentials:
+
+# SUPERBASE
+
+NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
+
+# Clerk
+
+NEXT_PUBLIC_CLERK_FRONTEND_API=<your-clerk-frontend-api>
+CLERK_API_KEY=<your-clerk-api-key>
+
+Start the development server:
+npm run dev
+
+Open http://localhost:3000
+in your browser to view the app.
+
+Technologies Used
+
+Next.js – React framework for frontend and server-side rendering
+
+Supabase – Backend services including authentication and database
+
+TypeScript – Type safety for the entire project
+
+Node.js – Runtime environment
+
+npm – Dependency management
+
+| Package             | Version |
+| ------------------- | ------- |
+| **Next.js**         | 13.4.4  |
+| **React**           | 18.2.0  |
+| **React DOM**       | 18.2.0  |
+| **TypeScript**      | 5.0.0   |
+| **Supabase JS SDK** | 2.56.0  |
+| **Clerk JS SDK**    | 4.0.0   |
+
+Contributing
+
+Fork the repository
+
+Create a new branch (git checkout -b feature/your-feature)
+
+Make your changes
+
+Commit your changes (git commit -m "Add some feature")
+
+Push to the branch (git push origin feature/your-feature)
+
+Create a Pull Request
