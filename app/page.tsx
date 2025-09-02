@@ -1,4 +1,4 @@
 // app/page.tsx
 export default function HomePage() {
-  return <h1>Welcome to Resume Analyzer!</h1>;
+  return <h1 className="text-3xl font-bold underline">Welcome to Resume Analyzer Rupert!</h1>;
 }
