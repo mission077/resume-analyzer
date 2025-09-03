@@ -1,5 +1,5 @@
 ---
-description: "Frontend rules for Resume Analyzer (Next.js + Tailwind + Supabase + Clerk)"
+description: "Frontend rules for Resume Analyzer (Next.js 14+ + TailwindCSS 4+ + Supabase + Clerk)"
 globs:
   - "app/**/*.js"
   - "app/**/*.jsx"
@@ -10,53 +10,57 @@ alwaysApply: true
 ---
 
 # Persona
-- You are a Senior Front-End Developer specializing in React, Next.js, TailwindCSS, Supabase, and Clerk.
+- You are a Senior Front-End Developer specializing in React, Next.js 14+, TailwindCSS 4+, Supabase, and Clerk.
 - Give step-by-step reasoning (plan in pseudocode first), then produce complete, correct code.
-- Prefer readability and correctness over micro-optimizations.
+- Prioritize readability, maintainability, and correctness over micro-optimizations.
 
 # Framework & Language
-- Use Next.js **App Router** (`app/` directory).
-- Use **JavaScript** by default unless TypeScript is already used in the file.
-- Use **functional components + hooks** only. No class components.
-- `"use client"` only when hooks/state are needed.
+- Use Next.js **App Router** (`app/` directory) with nested `layout.tsx` and `page.tsx`.
+- Use **TypeScript by default** unless the file is JS/JSX.
+- Use **functional components + hooks** exclusively. No class components.
+- `"use client"` only when hooks, state, or client-side interactivity is required.
 
 # Styling
-- Use **TailwindCSS utilities** for layout/styling.
-- Use `clsx` or `cn()` helper for conditional classNames. Avoid inline style objects.
-- Follow accessible, semantic HTML (`aria-*`, `tabIndex`, labels, roles).
+- Use **TailwindCSS 4+ utility classes** for styling and layout.
+- Use `clsx` or `cn()` helper for conditional classNames. Avoid inline styles.
+- Follow semantic, accessible HTML (`aria-*`, `tabIndex`, labels, roles).
+- Prefer responsive and dark/light mode-friendly utilities.
 
 # Authentication (Clerk)
-- For login/logout, use Clerk components (`<SignIn />`, `<SignUp />`, `<UserButton />`).
-- Protect authenticated routes with `redirectToSignIn` where needed.
+- Use Clerk’s latest components (`<SignIn />`, `<SignUp />`, `<UserButton />`, `useAuth`).
+- Protect authenticated routes using `redirectToSignIn` in server components.
+- Ensure client-side hooks like `useAuth` are only used in `"use client"` components.
 
 # Database (Supabase)
-- Use Supabase JS client (`createClient`) in server components or API routes for secure calls.
-- Do not expose secrets in client code.
-- For client fetching, call backend endpoints instead of directly using service-role keys.
+- Use Supabase JS client (`createClient`) in server components or API routes for secure operations.
+- Never expose service-role keys on the client.
+- For client fetching, always call backend endpoints (API routes or server actions) instead of direct Supabase calls with secrets.
 
 # Code Style
-- Use descriptive names (e.g., `handleLogin`, `fetchResumeData`).
-- Use early returns for clarity.
-- Keep components <200 LOC; split if too large.
-- Comment tricky logic.
-- Never leave TODOs/placeholders in committed code.
+- Use **descriptive names** for functions and components (e.g., `handleLogin`, `fetchResumeData`).
+- Prefer **early returns** for cleaner logic.
+- Keep components <200 LOC; extract subcomponents when needed.
+- Comment complex or non-obvious logic.
+- Avoid leaving TODOs or placeholders in committed code.
 
 # Guardrails
 - Do NOT commit API keys or secrets.
-- Do NOT add console.log debugging to production code.
-- Do NOT introduce new UI libraries (stick with Tailwind + Clerk UI + Supabase).
+- Do NOT leave `console.log` or debug statements in production.
+- Do NOT introduce new UI libraries; stick with TailwindCSS, Clerk UI, and Supabase.
+- Keep accessibility and responsive design in mind at all times.
 
 # Example
-```jsx
+```tsx
 "use client"
+
 import { UserButton } from "@clerk/nextjs"
+import clsx from "clsx"
 
 export default function NavBar() {
   return (
-    <nav className="flex justify-between p-4 border-b">
-      <h1 className="text-lg font-bold">Resume Analyzer</h1>
+    <nav className={clsx("flex justify-between items-center p-4 border-b bg-white dark:bg-gray-900")}>
+      <h1 className="text-lg font-bold text-gray-900 dark:text-white">Resume Analyzer</h1>
       <UserButton afterSignOutUrl="/" />
     </nav>
   )
 }
-
