@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.31.5",
+    "@radix-ui/react-slot": "^1.2.3",
     "@supabase/supabase-js": "^2.56.0",
     "@tailwindcss/postcss": "^4.1.12",
     "class-variance-authority": "^0.7.1",
