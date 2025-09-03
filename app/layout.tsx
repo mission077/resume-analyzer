@@ -1,5 +1,18 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
+import { Mona_Sans } from "next/font/google";
+
+// Set up custom fonts - Mona Sans
+const monaSans = Mona_Sans({
+  variable: "--font-mona-sans",
+  subsets: ["latin"]
+})
+
+// Set up Metadata for SEO and UX
+export const metadata = {
+  title: "Resume Analyzer",
+  description: "AI-powered resume optimization and analysis",
+};
 
 export default function RootLayout({
   children,
@@ -9,7 +22,9 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body>{children}</body>
+        <body className={`${monaSans.className} antialiased pattern`}>
+          {children}
+        </body>
       </html>
     </ClerkProvider>
   );
