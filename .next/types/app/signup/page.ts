@@ -1,8 +1,8 @@
-// File: C:\Users\missi\OneDrive\Desktop\resume-analyzer\app\page.tsx
-import * as entry from '../../../app/page.js'
+// File: C:\Users\missi\OneDrive\Desktop\resume-analyzer\app\signup\page.tsx
+import * as entry from '../../../../app/signup/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
-type TEntry = typeof import('../../../app/page.js')
+type TEntry = typeof import('../../../../app/signup/page.js')
 
 type SegmentParams<T extends Object = any> = T extends Record<string, any>
   ? { [K in keyof T]: T[K] extends string ? string | string[] | undefined : never }
