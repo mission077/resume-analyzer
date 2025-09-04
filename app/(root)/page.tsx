@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 // app/page.tsx
+// This is the landing page
 export default function HomePage() {
   return (
     <>
