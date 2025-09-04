@@ -1,4 +1,34 @@
+# Dependencies
 node_modules
-.env
-.cursor/rules
+
+# Next.js build output
 .next
+out
+
+# Production build
+/build
+
+# Env files
+.env
+.env*.local
+
+# OS files
+.DS_Store
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor configs
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+.idea
+*.swp
+
+.cursor/rules
