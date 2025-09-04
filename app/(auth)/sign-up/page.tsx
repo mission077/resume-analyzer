@@ -9,8 +9,6 @@ export default function SignUpPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   
@@ -30,22 +28,61 @@ export default function SignUpPage() {
     setError("")
 
     try {
+      console.log("Attempting sign-up with:", { email, password: "***" })
+      
       const result = await signUp.create({
         emailAddress: email,
-        password,
-        firstName,
-        lastName,
+        password: password,
       })
+
+      console.log("Sign-up result:", result)
 
       if (result.status === "complete") {
         router.push("/dashboard")
+      } else if (result.status === "missing_requirements") {
+        // Check if email verification is needed
+        if (result.unverifiedFields && result.unverifiedFields.includes('email_address')) {
+          setError("Please check your email to verify your account before signing in.")
+        } else {
+          setError("Please complete all required fields.")
+        }
       } else {
-        setError("Something went wrong. Please try again.")
+        console.log("Unexpected status:", result.status)
+        setError(`Sign-up status: ${result.status}. Please try again.`)
       }
     } catch (err: any) {
-      setError(err.errors?.[0]?.message || "An error occurred")
+      console.log("Sign-up error:", err) // For debugging
+      
+      // Handle different types of Clerk errors
+      if (err.errors && err.errors.length > 0) {
+        const errorMessage = err.errors[0].message
+        console.log("First error:", errorMessage)
+        setError(errorMessage)
+      } else if (err.message) {
+        setError(err.message)
+      } else {
+        setError("An unexpected error occurred. Please try again.")
+      }
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleGoogleSignUp = async () => {
+    try {
+      // Require OAuth Configuration in Clerk dashboard
+      setError("Google OAuth needs to be configured in Clerk dashboard")
+    } catch (err: any) {
+      setError("Google sign-up failed. Please try again.")
+    }
+  }
+
+  const handleGithubSignUp = async () => {
+    try {
+      // Require OAuth Configuration in Clerk dashboard
+      setError("GitHub OAuth needs to be configured in Clerk dashboard")
+    } catch (err: any) {
+      setError("GitHub sign-up failed. Please try again.")
     }
   }
 
@@ -84,41 +121,11 @@ export default function SignUpPage() {
           {/* Welcome Message */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-800 mb-3">Create your account</h1>
-            <p className="text-gray-600 text-lg">Start optimizing your resume today</p>
+            <p className="text-gray-600 text-lg">Sign up with email and password</p>
           </div>
 
           {/* Sign Up Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Name Fields */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="firstName" className="block text-gray-700 font-semibold mb-3 text-base">
-                  First Name
-                </label>
-                <input
-                  id="firstName"
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-base"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="lastName" className="block text-gray-700 font-semibold mb-3 text-base">
-                  Last Name
-                </label>
-                <input
-                  id="lastName"
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-base"
-                  required
-                />
-              </div>
-            </div>
-
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-gray-700 font-semibold mb-3 text-base">
@@ -171,6 +178,9 @@ export default function SignUpPage() {
               </div>
             )}
 
+             {/* Add CAPTCHA element : Sign-up require CAPTCHA for new account creation */}
+             <div id="clerk-captcha"></div>
+             
             {/* Sign Up Button */}
             <button
               type="submit"
@@ -193,14 +203,20 @@ export default function SignUpPage() {
 
           {/* Social Login */}
           <div className="grid grid-cols-2 gap-4">
-            <button className="flex items-center justify-center space-x-2 bg-white border-2 border-gray-200 text-gray-700 font-medium py-3 px-6 rounded-xl hover:bg-gray-50 hover:border-purple-300 transition-all duration-200">
+            <button 
+              onClick={handleGoogleSignUp}
+              className="flex items-center justify-center space-x-2 bg-white border-2 border-gray-200 text-gray-700 font-medium py-3 px-6 rounded-xl hover:bg-gray-50 hover:border-purple-300 transition-all duration-200"
+            >
               <svg className="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M20.283 10.356h-8.327v3.451h4.792c-.446 2.193-2.313 3.453-4.792 3.453a5.27 5.27 0 0 1-5.279-5.28 5.27 5.27 0 0 1 5.279-5.279c1.259 0 2.397.447 3.29 1.178l2.6-2.599c-1.584-1.381-3.615-2.233-5.89-2.233a9.955 9.955 0 0 0-9.934 9.934 9.955 9.955 0 0 0 9.934 9.934c4.467 0 8.529-3.249 9.491-7.178h-.001z"/>
               </svg>
               <span>Google</span>
             </button>
             
-            <button className="flex items-center justify-center space-x-2 bg-white border-2 border-gray-200 text-gray-700 font-medium py-3 px-6 rounded-xl hover:bg-gray-50 hover:border-purple-300 transition-all duration-200">
+            <button 
+              onClick={handleGithubSignUp}
+              className="flex items-center justify-center space-x-2 bg-white border-2 border-gray-200 text-gray-700 font-medium py-3 px-6 rounded-xl hover:bg-gray-50 hover:border-purple-300 transition-all duration-200"
+            >
               <svg className="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
               </svg>
