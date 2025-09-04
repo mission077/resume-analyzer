@@ -1,37 +1,46 @@
 "use client"
 
 import { useState } from "react"
-import { useSignIn } from "@clerk/nextjs"
+import { useSignUp } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 
-export default function SignInPage() {
+export default function SignUpPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   
-  // An object that contains the signIn function and a boolean that indicates if the signIn function is loaded
-  const { signIn, isLoaded } = useSignIn()
+  const { signUp, isLoaded } = useSignUp()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!isLoaded) return
 
+    if (password !== confirmPassword) {
+      setError("Passwords do not match")
+      return
+    }
+
     setIsLoading(true)
     setError("")
 
     try {
-      const result = await signIn.create({
-        identifier: email,
+      const result = await signUp.create({
+        emailAddress: email,
         password,
+        firstName,
+        lastName,
       })
 
       if (result.status === "complete") {
         router.push("/dashboard")
       } else {
-        setError("Account not found. Please sign up.")
+        setError("Something went wrong. Please try again.")
       }
     } catch (err: any) {
       setError(err.errors?.[0]?.message || "An error occurred")
@@ -53,33 +62,63 @@ export default function SignInPage() {
           </Link>
         </div>
 
-        {/* Login Card */}
+        {/* Sign Up Card */}
         <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/30 p-8">
           {/* Auth Tabs */}
           <div className="flex mb-8">
             <div className="flex-1 text-center">
-              <button className="w-full py-2 px-4 bg-purple-500 text-white rounded-lg font-medium">
-                Sign in
-              </button>
-            </div>
-            <div className="flex-1 text-center">
               <Link 
-                href="/sign-up" 
+                href="/sign-in" 
                 className="w-full py-2 px-4 text-gray-600 hover:text-purple-600 transition-colors font-medium"
               >
-                Create account
+                Sign in
               </Link>
+            </div>
+            <div className="flex-1 text-center">    
+              <button className="w-full py-2 px-4 bg-purple-500 text-white rounded-lg font-medium">
+                Create account
+              </button>
             </div>
           </div>
 
           {/* Welcome Message */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-3">Welcome back</h1>
-            <p className="text-gray-600 text-lg">Sign in to access your dashboard</p>
+            <h1 className="text-3xl font-bold text-gray-800 mb-3">Create your account</h1>
+            <p className="text-gray-600 text-lg">Start optimizing your resume today</p>
           </div>
 
-          {/* Login Form */}
+          {/* Sign Up Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Name Fields */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="firstName" className="block text-gray-700 font-semibold mb-3 text-base">
+                  First Name
+                </label>
+                <input
+                  id="firstName"
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-base"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="lastName" className="block text-gray-700 font-semibold mb-3 text-base">
+                  Last Name
+                </label>
+                <input
+                  id="lastName"
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-base"
+                  required
+                />
+              </div>
+            </div>
+
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-gray-700 font-semibold mb-3 text-base">
@@ -90,13 +129,13 @@ export default function SignInPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@company.com"
+                placeholder="rupert@gmail.com"
                 className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-base"
                 required
               />
             </div>
 
-            {/* Password Field */}
+            {/* Password Fields */}
             <div>
               <label htmlFor="password" className="block text-gray-700 font-semibold mb-3 text-base">
                 Password
@@ -111,6 +150,20 @@ export default function SignInPage() {
               />
             </div>
 
+            <div>
+              <label htmlFor="confirmPassword" className="block text-gray-700 font-semibold mb-3 text-base">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-base"
+                required
+              />
+            </div>
+
             {/* Error Message */}
             {error && (
               <div className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-lg">
@@ -118,13 +171,13 @@ export default function SignInPage() {
               </div>
             )}
 
-            {/* Sign In Button */}
+            {/* Sign Up Button */}
             <button
               type="submit"
               disabled={isLoading}
               className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Signing in..." : "Sign in"}
+              {isLoading ? "Creating account..." : "Create account"}
             </button>
           </form>
 
