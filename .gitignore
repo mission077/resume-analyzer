@@ -1,5 +1,5 @@
 # Dependencies
-node_modules
+node_modules/*
 
 # Next.js build output
 .next
@@ -33,3 +33,6 @@ pnpm-debug.log*
 
 .cursor/rules
 .cursor.next
+
+# clerk configuration (can include secrets)
+/.clerk/
