@@ -5,6 +5,7 @@ const anthropic = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
 });
 
+// Testing with Claude Sonnet 4 (or Vercel AI SDK later)
 export async function POST(req: NextRequest) {
   try {
     const { resumeDetails } = await req.json();

@@ -17,11 +17,11 @@ const extractFileText = async (file) => {
       // For now, provide a helpful message for PDF files
       extractedText = `PDF file received: ${file.name} (${file.size} bytes)
 
-Note: PDF text extraction is currently being set up. For now, please:
-1. Convert your PDF to DOCX format, or
-2. Copy and paste the text content into the job description field
+      Note: PDF text extraction is currently being set up. For now, please:
+      1. Convert your PDF to DOCX format, or
+      2. Copy and paste the text content into the job description field
 
-This will be fully supported soon!`
+      This will be fully supported soon!`
       console.log("⚠️ PDF processing - using informative message")
     } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       const result = await mammoth.extractRawText({ buffer })
