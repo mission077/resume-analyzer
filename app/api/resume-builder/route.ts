@@ -79,7 +79,6 @@ export async function POST(request) {
         resumeText
       }
     })
-  
   } catch (error) {
     console.error('Error processing form data:', error)
     return NextResponse.json({ error: 'Failed to process form data' }, { status: 500 })
