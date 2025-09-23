@@ -1,8 +1,12 @@
 "use client"
 
 import { SignOutButton } from "@clerk/nextjs"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 export default function DashboardPage() {
+  const router = useRouter()
+  
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
@@ -12,6 +16,11 @@ export default function DashboardPage() {
             Logout
           </button>
         </SignOutButton>
+        <div>
+          <button className="bg-blue-500 rounded-2xl px-4 py-2 mt-4 hover:bg-pink-400">
+            <Link href="/resume-builder">Go to Upload Resume Screen</Link>
+          </button>
+        </div>
       </div>
     </div>
   )
