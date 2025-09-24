@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import mammoth from 'mammoth'
-// import pdf from 'pdf-parse' // This is not working, so we are not using it
 
 const extractFileText = async (file) => {
   console.log("📄 Starting file extraction for:", file.name, "Type:", file.type)
