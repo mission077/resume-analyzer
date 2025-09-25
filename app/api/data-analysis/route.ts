@@ -15,16 +15,16 @@ export async function POST(req: NextRequest) {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `You are an expert resume and job-fit analyst.
-Given this extracted resume/job data, analyze strengths, gaps, and provide clear, actionable recommendations:
+    Given this extracted resume/job data, analyze strengths, gaps, and provide clear, actionable recommendations:
 
-Company: ${resumeDetails?.companyName || 'N/A'}
-Job Title: ${resumeDetails?.jobTitle || 'N/A'}
-Job Description: ${resumeDetails?.jobDescription || 'N/A'}
+    Company: ${resumeDetails?.companyName || 'N/A'}
+    Job Title: ${resumeDetails?.jobTitle || 'N/A'}
+    Job Description: ${resumeDetails?.jobDescription || 'N/A'}
 
-Resume Text:
-${resumeDetails?.resumeText || 'No resume text provided'}
+    Resume Text:
+    ${resumeDetails?.resumeText || 'No resume text provided'}
 
-Return a concise analysis in Markdown with headings and bullet points.`;
+    Return a concise analysis in Markdown with headings and bullet points.`;
 
     const result = await model.generateContent(prompt);
     const text = result.response.text();
