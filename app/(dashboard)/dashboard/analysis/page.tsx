@@ -2,7 +2,7 @@ import React from 'react'
 
 const Analysis = () => {
   return (
-    <div>page</div>
+    <div>Analysis Page</div>
   )
 }
 
