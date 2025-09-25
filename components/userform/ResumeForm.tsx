@@ -1,9 +1,13 @@
 "use client";
 
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 
 const ResumeForm = ({ onSubmit, isLoading }) => {
+    const [isMounted, setIsMounted] = useState(false)
+    useEffect(() => {
+        setIsMounted(true)
+    }, [])
     const [resume, setResume] = useState(null)
     const [fileError, setFileError] = useState(null)
 
@@ -74,10 +78,14 @@ const ResumeForm = ({ onSubmit, isLoading }) => {
     // React-Dropzone props
     const {getRootProps, getInputProps, isDragActive} = useDropzone({onDrop})
     
+    if (!isMounted) {
+        return null
+    }
+
     return (
     <section className='min-h-screen flex items-center justify-center p-4'>
         <div className='w-full max-w-md'>
-            <form onSubmit={handleSubmit}>
+            <form suppressHydrationWarning onSubmit={handleSubmit}>
                 {/* Company Name */}
                 <div>
                     <label>Company Name</label>
@@ -129,7 +137,7 @@ const ResumeForm = ({ onSubmit, isLoading }) => {
                 <div>
                     <div {...getRootProps()} className='w-full bg-white rounded-2xl p-2 border-2 border-white/30 mt-2 hover:cursor-pointer'>
                         {/* If user has already uploaded a resume, show the file name */}
-                        <input {...getInputProps()} />
+                        <input suppressHydrationWarning {...getInputProps()} />
                         {isDragActive ? (
                             resume ? (
                                 <p>Drop to replace the current resume</p>

@@ -18,7 +18,7 @@ export default function DashboardPage() {
         </SignOutButton>
         <div>
           <button className="bg-blue-500 rounded-2xl px-4 py-2 mt-4 hover:bg-pink-400">
-            <Link href="/resume-builder">Go to Upload Resume Screen</Link>
+            <Link href="/dashboard/userform">Go to Upload Resume Screen</Link>
           </button>
         </div>
       </div>

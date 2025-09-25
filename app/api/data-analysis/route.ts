@@ -1,36 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.CLAUDE_API_KEY,
-});
+export const runtime = 'nodejs'
 
-// Testing with Claude Sonnet 4 (or Vercel AI SDK later)
 export async function POST(req: NextRequest) {
   try {
     const { resumeDetails } = await req.json();
+    
+    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      return NextResponse.json({ error: 'Missing GOOGLE_GENERATIVE_AI_API_KEY' }, { status: 500 });
+    }
 
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 20000,
-      temperature: 1,
-      system: "You are an expert focus and productivity analyst. Analyze the provided focus test results and provide insights on attention patterns, areas for improvement, and recommendations for better focus.",
-      messages: [
-        {
-          role: "user",
-          content: `Analyze these focus test results: ${JSON.stringify(resumeDetails)}`
-        }
-      ]
-    });
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    return NextResponse.json({ 
-      analysis: message.content[0].type === 'text' ? message.content[0].text : 'Analysis completed'
-    });
-  } catch (error) {
-    console.error('Error calling Anthropic API:', error);
+    const prompt = `You are an expert resume and job-fit analyst.
+    Given this extracted resume/job data, analyze strengths, gaps, and provide clear, actionable recommendations:
+
+    Company: ${resumeDetails?.companyName || 'N/A'}
+    Job Title: ${resumeDetails?.jobTitle || 'N/A'}
+    Job Description: ${resumeDetails?.jobDescription || 'N/A'}
+
+    Resume Text:
+    ${resumeDetails?.resumeText || 'No resume text provided'}
+
+    Return a concise analysis in Markdown with headings and bullet points.`;
+
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+
+    return NextResponse.json({ analysis: text });
+  } catch (error: any) {
+    const status = error?.status || 500
+    if (status === 429) {
+      return NextResponse.json({ error: 'LLM quota exceeded. Please retry shortly.' }, { status })
+    }
+    console.error('Error calling Gemini API:', error);
     return NextResponse.json(
-      { error: 'Failed to analyze focus results' },
-      { status: 500 }
+      { error: 'Failed to analyze resume' },
+      { status }
     );
   }
 }
