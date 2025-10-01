@@ -33,3 +33,6 @@ pnpm-debug.log*
 
 .cursor/rules
 .cursor.next
+
+# clerk configuration (can include secrets)
+/.clerk/
