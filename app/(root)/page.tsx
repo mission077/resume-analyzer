@@ -1,3 +1,6 @@
+"use client"
+
+
 import { Button } from "@/components/ui/button";
 import * as Strings from "@/components/ui/strings";
 import { Header } from "@/components/ui/header/index";
@@ -141,7 +144,7 @@ export default function HomePage() {
         <h1>
           <p className="font-bold text-3xl mt-4">{Strings.howItWorks}</p>
         </h1>
-        <p className="text-md mt-4">{Strings. worksDesc}</p>
+        <p className="text-md mt-4">{Strings.worksDesc}</p>
       </div>
 
       <div className="container flex mx-auto gap-4">

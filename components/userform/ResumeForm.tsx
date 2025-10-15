@@ -3,20 +3,25 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 
-const ResumeForm = ({ onSubmit, isLoading }) => {
+interface ResumeFormProps {
+  onSubmit: (formData: FormData) => void;
+  isLoading: boolean;
+}
+
+const ResumeForm = ({ onSubmit, isLoading }: ResumeFormProps) => {
     const [isMounted, setIsMounted] = useState(false)
     useEffect(() => {
         setIsMounted(true)
     }, [])
-    const [resume, setResume] = useState(null)
-    const [fileError, setFileError] = useState(null)
+    const [resume, setResume] = useState<File | null>(null)
+    const [fileError, setFileError] = useState<string | null>(null)
 
-    const [companyName, setCompanyName] = useState("")
-    const [jobTitle, setJobTitle] = useState("")
-    const [jobDescription, setJobDescription] = useState("")
-    const [formError, setFormError] = useState({})
+    const [companyName, setCompanyName] = useState<string>("")
+    const [jobTitle, setJobTitle] = useState<string>("")
+    const [jobDescription, setJobDescription] = useState<string>("")
+    const [formError, setFormError] = useState<Record<string, string>>({})
 
-    const onDrop = useCallback(acceptedFiles => {
+    const onDrop = useCallback((acceptedFiles: File[]) => {
         // Handling Edge Cases 
         const file = acceptedFiles[0]
 
@@ -55,7 +60,7 @@ const ResumeForm = ({ onSubmit, isLoading }) => {
         return Object.keys(errors).length === 0
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault() // Prevent the form from refreshing page
 
         console.log("Form submitted")
@@ -167,7 +172,7 @@ const ResumeForm = ({ onSubmit, isLoading }) => {
                     )}
                 </div>
 
-                {/* Submit Form Buttonß */}
+                {/* Submit Form Button */}
                 <button
                     type="submit"
                     disabled={isLoading}
