@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 export const runtime = 'nodejs'
 
@@ -11,8 +11,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing GOOGLE_GENERATIVE_AI_API_KEY' }, { status: 500 });
     }
 
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Initialize the new Google GenAI client
+    const ai = new GoogleGenAI({
+      apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY
+    });
 
     const prompt = `You are an expert resume and job-fit analyst.
     Given this extracted resume/job data, analyze strengths, gaps, and provide clear, actionable recommendations:
@@ -26,10 +28,13 @@ export async function POST(req: NextRequest) {
 
     Return a concise analysis in Markdown with headings and bullet points.`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    // Use the new API structure with gemini-2.5-flash model
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt
+    });
 
-    return NextResponse.json({ analysis: text });
+    return NextResponse.json({ analysis: response.text });
   } catch (error: any) {
     const status = error?.status || 500
     if (status === 429) {
@@ -37,7 +42,7 @@ export async function POST(req: NextRequest) {
     }
     console.error('Error calling Gemini API:', error);
     return NextResponse.json(
-      { error: 'Failed to analyze resume' },
+      { error: 'Failed to analyze resume', details: error.message },
       { status }
     );
   }
