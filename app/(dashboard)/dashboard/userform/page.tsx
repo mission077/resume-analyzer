@@ -13,6 +13,22 @@ const page = () => {
     try {
       setIsLoading(true)
       
+      // Navigate to loading screen immediately
+      router.push('/dashboard/analysis/loading')
+      
+      // TEST MODE: Skip API calls for easier testing
+      const TEST_MODE = true // Set to false when you want to use real APIs
+      
+      if (TEST_MODE) {
+        console.log('🧪 TEST MODE: Skipping API calls')
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 3000))
+        // Navigate to analysis page
+        router.push('/dashboard/analysis')
+        return
+      }
+      
+      // REAL API CALLS (when TEST_MODE = false)
       // Send the form data to the back end
       const response = await fetch('/api/resume-builder', {
         method: 'POST',
@@ -60,13 +76,27 @@ const page = () => {
       
     } catch (error) {
       console.error('Error processing resume:', error)
-      // You might want to show an error message to the user here
+      // Navigate back to form on error
+      router.push('/dashboard/userform')
     } finally {
       setIsLoading(false)
     }
   }
   return (
-    <ResumeForm onSubmit={onSubmit} isLoading={isLoading}/>
+    <div>
+      <ResumeForm onSubmit={onSubmit} isLoading={isLoading}/>
+      
+      {/* Quick Test Button - Remove this in production */}
+      <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <p className="text-sm text-yellow-800 mb-2">🧪 Test Mode Active</p>
+        <button 
+          onClick={() => router.push('/dashboard/analysis/loading')}
+          className="bg-yellow-500 text-white px-4 py-2 rounded text-sm hover:bg-yellow-600"
+        >
+          Test Loading Screen
+        </button>
+      </div>
+    </div>
   )
 }
 
