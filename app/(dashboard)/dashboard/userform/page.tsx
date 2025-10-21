@@ -13,6 +13,13 @@ const page = () => {
     try {
       setIsLoading(true)
       
+      // Set loading state in localStorage
+      localStorage.setItem('resumeAnalysisLoading', 'true')
+      console.log('🚀 Form submitted - navigating to loading page')
+      
+      // Navigate to loading screen immediately
+      router.push('/dashboard/analysis/loading')
+      
       // Send the form data to the back end
       const response = await fetch('/api/resume-builder', {
         method: 'POST',
@@ -23,18 +30,13 @@ const page = () => {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       
-      console.log('Response received from back end:', response)
-      
       const data = await response.json()
-      console.log('Response data after sending to back end:', data)
       
       if (!data.data) {
         throw new Error('Invalid response format from resume-builder API')
       }
-      
-      console.log('Data:', data.data.resumeText)
 
-      // Test out our LLM Gemini
+      // Send data to LLM for analysis
       const payload = {
         companyName: data.data.companyName,
         jobTitle: data.data.jobTitle,
@@ -53,14 +55,22 @@ const page = () => {
       }
       
       const data2 = await response2.json()
-      console.log('Response received from data analysis:', data2)
+      console.log('✅ APIs completed - storing data and navigating to analysis')
+      
+      // Store analysis data and mark loading as complete
+      localStorage.setItem('analysisData', JSON.stringify(data2))
+      localStorage.setItem('resumeAnalysisLoading', 'false')
+      
+      // Dispatch custom event for same-tab communication
+      window.dispatchEvent(new CustomEvent('loadingComplete'))
       
       // Navigate to analysis page on success
       router.push('/dashboard/analysis')
       
     } catch (error) {
       console.error('Error processing resume:', error)
-      // You might want to show an error message to the user here
+      localStorage.setItem('resumeAnalysisLoading', 'false')
+      router.push('/dashboard/userform')
     } finally {
       setIsLoading(false)
     }
