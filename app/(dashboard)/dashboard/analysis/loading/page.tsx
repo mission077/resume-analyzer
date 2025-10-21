@@ -25,13 +25,49 @@ export default function AnalysisLoadingPage() {
     return () => clearInterval(interval)
   }, [loadingMessages.length])
 
-  // Auto-redirect to analysis page after a delay (for testing)
+  // Listen for loading state changes
   useEffect(() => {
-    const timer = setTimeout(() => {
-      router.push('/dashboard/analysis')
-    }, 5000) // 5 seconds delay for testing (change to 15000 for real API timing)
+    const checkLoadingState = () => {
+      const loadingState = localStorage.getItem('resumeAnalysisLoading')
+      console.log('🔍 Loading page checking state:', loadingState)
+      if (loadingState === 'false') {
+        console.log('🎯 Loading complete - navigating to analysis page')
+        router.push('/dashboard/analysis')
+      }
+    }
 
-    return () => clearTimeout(timer)
+    // Check immediately
+    checkLoadingState()
+
+    // Listen for storage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      console.log('📡 Storage event detected:', e.key, e.newValue)
+      if (e.key === 'resumeAnalysisLoading' && e.newValue === 'false') {
+        console.log('🎯 Storage change - navigating to analysis page')
+        router.push('/dashboard/analysis')
+      }
+    }
+
+    // Listen for custom events (for same-tab updates)
+    const handleCustomEvent = () => {
+      console.log('📡 Custom event detected - checking loading state')
+      checkLoadingState()
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('loadingComplete', handleCustomEvent)
+
+    // Fallback timer in case something goes wrong
+    const fallbackTimer = setTimeout(() => {
+      console.warn('Loading timeout - redirecting to analysis page')
+      router.push('/dashboard/analysis')
+    }, 60000) 
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('loadingComplete', handleCustomEvent)
+      clearTimeout(fallbackTimer)
+    }
   }, [router])
 
   return (
@@ -79,7 +115,7 @@ export default function AnalysisLoadingPage() {
         {/* Estimated Time */}
         <div className="mt-8 p-4 bg-violet-50 rounded-lg">
           <p className="text-sm text-violet-700">
-            ⏱️ This usually takes 10-15 seconds
+            ⏱️ This usually takes 15-30 seconds
           </p>
         </div>
 

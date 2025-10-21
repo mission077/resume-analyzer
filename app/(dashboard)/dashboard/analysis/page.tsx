@@ -1,5 +1,7 @@
 "use client"
 
+import { useState, useEffect } from 'react'
+
 // Mock data structure
 interface AnalysisData {
   overallScore: number
@@ -15,7 +17,7 @@ interface AnalysisData {
   }
 }
 
-// Mock data
+// Mock data fallback
 const mockAnalysisData: AnalysisData = {
   overallScore: 78,
   strengths: [
@@ -46,8 +48,38 @@ const mockAnalysisData: AnalysisData = {
 }
 
 export default function AnalysisPage() {
-  // Use mock data for now - later this will come from the API
-  const analysisData = mockAnalysisData
+  const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null)
+
+  useEffect(() => {
+    // Try to get real data from localStorage first
+    const storedData = localStorage.getItem('analysisData')
+    if (storedData) {
+      try {
+        const parsedData = JSON.parse(storedData)
+        // For now, use mock data structure until we parse the real API response
+        setAnalysisData(mockAnalysisData)
+        // Clear the stored data
+        localStorage.removeItem('analysisData')
+      } catch (error) {
+        console.error('Error parsing stored analysis data:', error)
+        setAnalysisData(mockAnalysisData)
+      }
+    } else {
+      // Fallback to mock data if no stored data
+      setAnalysisData(mockAnalysisData)
+    }
+  }, [])
+
+  if (!analysisData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-500 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading analysis...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background py-8">

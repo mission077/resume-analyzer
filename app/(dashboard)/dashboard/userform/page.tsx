@@ -13,22 +13,13 @@ const page = () => {
     try {
       setIsLoading(true)
       
+      // Set loading state in localStorage
+      localStorage.setItem('resumeAnalysisLoading', 'true')
+      console.log('🚀 Form submitted - navigating to loading page')
+      
       // Navigate to loading screen immediately
       router.push('/dashboard/analysis/loading')
       
-      // TEST MODE: Skip API calls for easier testing
-      const TEST_MODE = true // Set to false when you want to use real APIs
-      
-      if (TEST_MODE) {
-        console.log('🧪 TEST MODE: Skipping API calls')
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 3000))
-        // Navigate to analysis page
-        router.push('/dashboard/analysis')
-        return
-      }
-      
-      // REAL API CALLS (when TEST_MODE = false)
       // Send the form data to the back end
       const response = await fetch('/api/resume-builder', {
         method: 'POST',
@@ -39,18 +30,13 @@ const page = () => {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       
-      console.log('Response received from back end:', response)
-      
       const data = await response.json()
-      console.log('Response data after sending to back end:', data)
       
       if (!data.data) {
         throw new Error('Invalid response format from resume-builder API')
       }
-      
-      console.log('Data:', data.data.resumeText)
 
-      // Test out our LLM Gemini
+      // Send data to LLM for analysis
       const payload = {
         companyName: data.data.companyName,
         jobTitle: data.data.jobTitle,
@@ -69,34 +55,28 @@ const page = () => {
       }
       
       const data2 = await response2.json()
-      console.log('Response received from data analysis:', data2)
+      console.log('✅ APIs completed - storing data and navigating to analysis')
+      
+      // Store analysis data and mark loading as complete
+      localStorage.setItem('analysisData', JSON.stringify(data2))
+      localStorage.setItem('resumeAnalysisLoading', 'false')
+      
+      // Dispatch custom event for same-tab communication
+      window.dispatchEvent(new CustomEvent('loadingComplete'))
       
       // Navigate to analysis page on success
       router.push('/dashboard/analysis')
       
     } catch (error) {
       console.error('Error processing resume:', error)
-      // Navigate back to form on error
+      localStorage.setItem('resumeAnalysisLoading', 'false')
       router.push('/dashboard/userform')
     } finally {
       setIsLoading(false)
     }
   }
   return (
-    <div>
-      <ResumeForm onSubmit={onSubmit} isLoading={isLoading}/>
-      
-      {/* Quick Test Button - Remove this in production */}
-      <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <p className="text-sm text-yellow-800 mb-2">🧪 Test Mode Active</p>
-        <button 
-          onClick={() => router.push('/dashboard/analysis/loading')}
-          className="bg-yellow-500 text-white px-4 py-2 rounded text-sm hover:bg-yellow-600"
-        >
-          Test Loading Screen
-        </button>
-      </div>
-    </div>
+    <ResumeForm onSubmit={onSubmit} isLoading={isLoading}/>
   )
 }
 
