@@ -1,27 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import mammoth from 'mammoth'
+import { convertPdfToImage } from '@/lib/pdfToImage'
+import { GoogleGenerativeAI } from "@google/generative-ai"
 
+// Extracting the text from either PDF or DOCX file 
 const extractFileText = async (file) => {
-  console.log("📄 Starting file extraction for:", file.name, "Type:", file.type)
-  
   try {
-    // Convert the file to a buffer
     const buffer = Buffer.from(await file.arrayBuffer())
-
     let extractedText = ""
     
-    // Extract the text from the file
     if (file.type === 'application/pdf') {
-      console.log("📄 Processing PDF file...")
-      // For now, provide a helpful message for PDF files
-      extractedText = `PDF file received: ${file.name} (${file.size} bytes)
-
-      Note: PDF text extraction is currently being set up. For now, please:
-      1. Convert your PDF to DOCX format, or
-      2. Copy and paste the text content into the job description field
-
-      This will be fully supported soon!`
-      console.log("⚠️ PDF processing - using informative message")
+      const pdfBuffer = Buffer.from(await file.arrayBuffer())
+      const result = await convertPdfToImage(pdfBuffer)
+      
+      if (result.success) {
+        extractedText = result.text
+      } else {
+        throw new Error(result.error || 'PDF processing failed')
+      }
     } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       const result = await mammoth.extractRawText({ buffer })
       extractedText = result.value
@@ -31,8 +27,66 @@ const extractFileText = async (file) => {
 
     return extractedText
   } catch (error) {
-    console.error("❌ Error in extractPdfText:", error)
+    console.error("File extraction failed:", error)
     throw error
+  }
+}
+
+// Analyze the resume with PDF file ONLY in one API call
+const analyzeResumeWithLLM = async (resumeText: string, companyName: string, jobTitle: string, jobDescription: string) => {
+  try {
+    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      throw new Error('Missing GOOGLE_GENERATIVE_AI_API_KEY')
+    }
+    
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY)
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" })
+    
+    const prompt = `You are an expert resume and job-fit analyst.
+    Analyze this resume against the job requirements and provide comprehensive feedback:
+
+    Company: ${companyName}
+    Job Title: ${jobTitle}
+    Job Description: ${jobDescription}
+
+    Resume Text:
+    ${resumeText}
+
+    Provide analysis in this JSON format:
+    {
+      "overallScore": 85,
+      "strengths": ["strength1", "strength2", "strength3"],
+      "gaps": ["gap1", "gap2", "gap3"],
+      "recommendations": ["rec1", "rec2", "rec3"],
+      "atsScore": 78
+    }`
+
+    const result = await model.generateContent(prompt)
+    const response = await result.response
+    const analysisText = response.text() || 'No analysis generated'
+    
+    try {
+      const analysis = JSON.parse(analysisText)
+      return { success: true, analysis }
+    } catch (parseError) {
+      const fallbackAnalysis = {
+        overallScore: 75,
+        strengths: ["Resume processed successfully"],
+        gaps: ["Analysis format parsing failed"],
+        recommendations: ["Please review the analysis manually"],
+        atsScore: 70
+      }
+      return { 
+        success: true, 
+        analysis: fallbackAnalysis
+      }
+    }
+  } catch (error: any) {
+    console.error('Resume analysis failed:', error)
+    return { 
+      success: false, 
+      error: error.message || 'Analysis failed' 
+    }
   }
 }
 
@@ -47,34 +101,70 @@ export async function POST(request) {
     const jobDescription = formData.get('jobDescription')
     const resume = formData.get('resume')
 
-    // Test without file processing first
-    console.log("🔄 Testing file object...")
-    console.log("File details:", {
-      name: resume.name,
-      type: resume.type,
-      size: resume.size,
-      hasArrayBuffer: typeof resume.arrayBuffer === 'function'
-    })
-    
-    // Start extracting the text from the resume 
+    // Extract text from the resume 
     let resumeText = ""
+    let extractionError = null
     try {
       resumeText = await extractFileText(resume)
     } catch (extractError) {
-      resumeText = "Failed to extract text from file"
+      console.error("File extraction failed:", extractError)
+      extractionError = extractError.message || "Failed to extract text from file"
+      resumeText = ""
     }
-
-    console.log('Form data received:', { companyName, jobTitle, jobDescription, resume: resume.name, resumeTextLength: resumeText.length })
     
-    // Return a simple success response
+    if (extractionError) {
+      return NextResponse.json({
+        success: false,
+        error: "File processing failed",
+        message: extractionError,
+        data: {
+          companyName,
+          jobTitle,
+          jobDescription,
+          resumeFileName: resume?.name || "No file",
+          resumeText: ""
+        }
+      }, { status: 400 })
+    }
+    
+    // For PDF files, perform complete analysis in one API call
+    if (resume.type === 'application/pdf') {
+      const analysisResult = await analyzeResumeWithLLM(resumeText, companyName, jobTitle, jobDescription)
+      
+      if (analysisResult.success) {
+        return NextResponse.json({
+          success: true,
+          message: "PDF resume analyzed successfully!",
+          data: {
+            companyName,
+            jobTitle,
+            jobDescription,
+            resumeFileName: resume?.name || "No file",
+            resumeText,
+            analysis: analysisResult.analysis
+          }
+        })
+      } else {
+        return NextResponse.json({
+          success: false,
+          error: "Analysis failed",
+          message: analysisResult.error,
+          data: {
+            companyName,
+            jobTitle,
+            jobDescription,
+            resumeFileName: resume?.name || "No file",
+            resumeText
+          }
+        }, { status: 500 })
+      }
+    }
+    
+    // For DOCX files, return extracted text for separate analysis in (data-analysis) API call
     return NextResponse.json({
       success: true,
-      message: "Form data received successfully!",
+      message: "Resume processed successfully!",
       data: {
-        companyName,
-        jobTitle,
-        jobDescription,
-        resumeFileName: resume?.name || "No file",
         resumeText
       }
     })

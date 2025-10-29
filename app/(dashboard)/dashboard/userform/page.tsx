@@ -15,50 +15,50 @@ const page = () => {
       
       // Set loading state in localStorage
       localStorage.setItem('resumeAnalysisLoading', 'true')
-      console.log('🚀 Form submitted - navigating to loading page')
       
       // Navigate to loading screen immediately
       router.push('/dashboard/analysis/loading')
       
-      // Send the form data to the back end
-      const response = await fetch('/api/resume-builder', {
+      // Send the form data to resume-builder API
+      const resumeBuilderResponse = await fetch('/api/resume-builder', {
         method: 'POST',
         body: formData
       })
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+      if (!resumeBuilderResponse.ok) {
+        throw new Error(`HTTP error! status: ${resumeBuilderResponse.status}`)
       }
       
-      const data = await response.json()
+      const resumeBuilderData = await resumeBuilderResponse.json()
       
-      if (!data.data) {
+      if (!resumeBuilderData.data) {
         throw new Error('Invalid response format from resume-builder API')
       }
 
-      // Send data to LLM for analysis
-      const payload = {
-        companyName: data.data.companyName,
-        jobTitle: data.data.jobTitle,
-        jobDescription: data.data.jobDescription,
-        resumeText: data.data.resumeText
+      // Check if PDF analysis was completed in one call (only PDF files have analysis)
+      if (resumeBuilderData.data.analysis) {
+        // PDF PATH: Analysis already completed in resume-builder
+        localStorage.setItem('analysisData', JSON.stringify({ analysis: resumeBuilderData.data.analysis }))
+      } else {
+        // DOCX PATH: Need to call data-analysis API for analysis
+        const analysisPayload = {
+          resumeText: resumeBuilderData.data.resumeText
+        }
+        
+        const dataAnalysisResponse = await fetch('/api/data-analysis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resumeDetails: analysisPayload })
+        })
+        
+        if (!dataAnalysisResponse.ok) {
+          throw new Error(`HTTP error! status: ${dataAnalysisResponse.status}`)
+        }
+        
+        const dataAnalysisResult = await dataAnalysisResponse.json()
+        localStorage.setItem('analysisData', JSON.stringify(dataAnalysisResult))
       }
       
-      const response2 = await fetch('/api/data-analysis', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resumeDetails: payload })
-      })
-      
-      if (!response2.ok) {
-        throw new Error(`HTTP error! status: ${response2.status}`)
-      }
-      
-      const data2 = await response2.json()
-      console.log('✅ APIs completed - storing data and navigating to analysis')
-      
-      // Store analysis data and mark loading as complete
-      localStorage.setItem('analysisData', JSON.stringify(data2))
       localStorage.setItem('resumeAnalysisLoading', 'false')
       
       // Dispatch custom event for same-tab communication
