@@ -1,7 +1,9 @@
 "use client";
 
+import { Header } from "@/components/ui/header/index";
 import React, { useCallback, useEffect, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
+import { Button } from "@/components/ui/button"
 
 interface ResumeFormProps {
   onSubmit: (formData: FormData) => void;
@@ -88,101 +90,129 @@ const ResumeForm = ({ onSubmit, isLoading }: ResumeFormProps) => {
     }
 
     return (
-    <section className='min-h-screen flex items-center justify-center p-4'>
-        <div className='w-full max-w-md'>
-            <form suppressHydrationWarning onSubmit={handleSubmit}>
-                {/* Company Name */}
-                <div>
-                    <label>Company Name</label>
-                    <input 
-                        id="companyName"
-                        type="text"
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        placeholder="Your Company Name"
-                        className='w-full bg-white rounded-2xl p-2 border-2 border-white/30 mt-2' 
-                    />
-                    {formError["companyName"] && (
-                        <p>{formError["companyName"]}</p>
-                    )}
-                </div>
+    <>
+        <Header/>
+        <form suppressHydrationWarning onSubmit={handleSubmit}>
+            <div className="container mx-auto px-2 flex gap-4 pt-10 pb-6">
+                <main className="bg-gray-50 rounded-lg basis-1/2 p-8">
+                    <section className='flex items-center justify-center p-4'>
+                        <div className='w-full'>
+                            <div>
+                                <h1 className="text-xl"
+                                    style={{ fontWeight: 'bold' }}>
+                                    Upload your resume
+                                </h1>
+                                <p className="text-md my-2">PDF</p>
+                            </div>
 
-                {/* Job Title */}
-                <div>
-                    <label>Job Title</label>
-                    <input 
-                        id="jobTitle"
-                        type="text"
-                        value={jobTitle}
-                        onChange={(e) => setJobTitle(e.target.value)}
-                        placeholder="Your job title"
-                        className='w-full bg-white rounded-2xl p-2 border-2 border-white/30 mt-2' 
-                    />
-                    {formError["jobTitle"] && (
-                        <p>{formError["jobTitle"]}</p>
-                    )}
-                </div>
-
-                {/* Job Description */}
-                <div>
-                    <label>Job Description</label>
-                    <textarea 
-                        id="jobDescription"
-                        value={jobDescription}
-                        onChange={(e) => setJobDescription(e.target.value)}
-                        placeholder="Copy your job description here or write a clear and concise responsibility and expectations"
-                        className='w-full bg-white rounded-2xl p-2 border-2 border-white/30 mt-2' 
-                    />
-                    {formError["jobDescription"] && (
-                        <p>{formError["jobDescription"]}</p>
-                    )}
-                </div>
-
-                {/* Drag and Drop Resume Zone */}
-                <div>
-                    <div {...getRootProps()} className='w-full bg-white rounded-2xl p-2 border-2 border-white/30 mt-2 hover:cursor-pointer'>
-                        {/* If user has already uploaded a resume, show the file name */}
-                        <input suppressHydrationWarning {...getInputProps()} />
-                        {isDragActive ? (
-                            resume ? (
-                                <p>Drop to replace the current resume</p>
-                            ) : (
-                                <p>Drop the files here...</p>
-                            )
+                            {/* Drag and Drop Resume Zone */}
+                            <div>
+                                <div {...getRootProps()} className='flex items-center bg-white rounded-2xl p-2 border-2 border-dotted mt-2 hover:cursor-pointer pt-15 pb-15 text-gray-500'>
+                                    {/* If user has already uploaded a resume, show the file name */}
+                                    <input suppressHydrationWarning {...getInputProps()} />
+                                    {isDragActive ? (
+                                        resume ? (
+                                            <p>Drop to replace the current resume</p>
+                                        ) : (
+                                            <p>Drop the files here...</p>
+                                        )
 
 
-                        ) : (
-                            resume ? (
-                                <div>
-                                    <p>{resume.name}</p>
-                                    <p>{Math.round(resume.size / 1024)} KB</p>
+                                    ) : (
+                                        resume ? (
+                                            <div>
+                                                <p>{resume.name}</p>
+                                                <p>{Math.round(resume.size / 1024)} KB</p>
+                                            </div>
+                                        ) : (
+                                            <div className="w-full flex items-center justify-center h-full flex-col">
+                                                <svg className="w-9 h-9 text-gray-500 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h3a3 3 0 0 0 0-6h-.025a5.56 5.56 0 0 0 .025-.5A5.5 5.5 0 0 0 7.207 9.021C7.137 9.017 7.071 9 7 9a4 4 0 1 0 0 8h2.167M12 19v-9m0 0-2 2m2-2 2 2"/>
+                                                </svg>
+                                                <p> Drag "n" drop some files here, or click to select files</p>
+                                            </div>
+                                        )
+                                    )}
                                 </div>
-                            ) : (
-                                <p>Drag "n" drop some files here, or click to select files</p>
-                            )
+                                {/* Displaying the error message if user upload invalid file */}
+                                {fileError && (
+                                    <p>{fileError}</p>
+                                )}
+                                {/* Displaying error message if resume is missing */}
+                                {formError["resume"] && (
+                                    <p>{formError["resume"]}</p>
+                                )}
+                            </div>
+                        </div>
+                    </section>
+                </main>
+                <main className="bg-gray-50 rounded-lg basis-1/2 p-8">
+                    <h1 className="text-xl"
+                        style={{ fontWeight: 'bold' }}>
+                        Job details
+                    </h1> 
+
+                    {/* Company Name */}
+                    <div className="pt-6">
+                        <label>Company Name</label>
+                        <input 
+                            id="companyName"
+                            type="text"
+                            value={companyName}
+                            onChange={(e) => setCompanyName(e.target.value)}
+                            placeholder="Your Company Name"
+                            className='w-full bg-white rounded-2xl p-2 border-2 mt-2' 
+                        />
+                        {formError["companyName"] && (
+                            <p>{formError["companyName"]}</p>
                         )}
                     </div>
-                    {/* Displaying the error message if user upload invalid file */}
-                    {fileError && (
-                        <p>{fileError}</p>
-                    )}
-                    {/* Displaying error message if resume is missing */}
-                    {formError["resume"] && (
-                        <p>{formError["resume"]}</p>
-                    )}
-                </div>
 
-                {/* Submit Form Button */}
-                <button
-                    type="submit"
-                    disabled={isLoading}
-                    className='bg-white mt-3 hover:cursor-pointer'
-                >
-                    {isLoading ? "Analyzing Resume..." : "Submit"}
-                </button>
-            </form>
-        </div>
-    </section>
+                    {/* Job Title */}
+                    <div className="pt-4">
+                        <label>Job Title</label>
+                        <input 
+                            id="jobTitle"
+                            type="text"
+                            value={jobTitle}
+                            onChange={(e) => setJobTitle(e.target.value)}
+                            placeholder="Your job title"
+                            className='w-full bg-white rounded-2xl p-2 border-2 mt-2' 
+                        />
+                        {formError["jobTitle"] && (
+                            <p>{formError["jobTitle"]}</p>
+                        )}
+                    </div>
+
+                    {/* Job Description */}
+                    <div className="pt-4">
+                        <label>Job Description</label>
+                        <textarea 
+                            id="jobDescription"
+                            value={jobDescription}
+                            onChange={(e) => setJobDescription(e.target.value)}
+                            placeholder="Copy your job description here or write a clear and concise responsibility and expectations"
+                            className='w-full bg-white rounded-2xl p-2 border-2 mt-2 pb-30' 
+                        />
+                        {formError["jobDescription"] && (
+                            <p>{formError["jobDescription"]}</p>
+                        )}
+                    </div>
+
+                    {/* Submit Form Buttonß */}
+                    <div className="pt-8">
+                        <Button
+                            type="submit"
+                            disabled={isLoading}
+                            className='mt-3 bg-violet-500 md:inline-flex'>
+                            {isLoading ? "Analyzing Resume..." : "Submit"}
+                        </Button>
+                    </div>
+                </main>
+            </div>
+        </form>
+    </>
+
   )
 }
 
