@@ -41,44 +41,35 @@ const ResumeForm = ({ onSubmit, isLoading }: ResumeFormProps) => {
 
         // If every validation passes , we can set the resume state
         setFileError("")
-        console.log(acceptedFiles)
         setResume(file)
     }, [])
 
     const validateForm = () => {
         const errors = {}
 
-        console.log("Validating:", { companyName, jobTitle, jobDescription, resume })
-
         if (!companyName) errors["companyName"] = "Company name is required"
         if (!jobTitle) errors["jobTitle"] = "Job title is required"
         if (!jobDescription) errors["jobDescription"] = "Job description is required"
         if (!resume) errors["resume"] = "Resume is required"
 
-        console.log("Errors found:", errors)
         setFormError(errors)
         
-        // Failed if there are errors, Valid if there are no erros
         return Object.keys(errors).length === 0
     }
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault() // Prevent the form from refreshing page
+        e.preventDefault()
 
-        console.log("Form submitted")
         if (!validateForm()) {
-            console.log("Form validation failed")
             return;
         }
 
-        console.log("Form validation passed")
         const formData = new FormData()
         formData.append("companyName", companyName)
         formData.append("jobTitle", jobTitle)
         formData.append("jobDescription", jobDescription)
         formData.append("resume", resume)
 
-        // Send the valid form data to the parent component
         onSubmit(formData)
     }
 
@@ -98,17 +89,15 @@ const ResumeForm = ({ onSubmit, isLoading }: ResumeFormProps) => {
                     <section className='flex items-center justify-center p-4'>
                         <div className='w-full'>
                             <div>
-                                <h1 className="text-xl"
-                                    style={{ fontWeight: 'bold' }}>
+                                <h1 className="text-xl" style={{ fontWeight: 'bold' }}>
                                     Upload your resume
                                 </h1>
-                                <p className="text-md my-2">PDF</p>
+                                <p className="text-md my-2">PDF or DOCX</p>
                             </div>
 
                             {/* Drag and Drop Resume Zone */}
                             <div>
                                 <div {...getRootProps()} className='flex items-center bg-white rounded-2xl p-2 border-2 border-dotted mt-2 hover:cursor-pointer pt-15 pb-15 text-gray-500'>
-                                    {/* If user has already uploaded a resume, show the file name */}
                                     <input suppressHydrationWarning {...getInputProps()} />
                                     {isDragActive ? (
                                         resume ? (
@@ -116,8 +105,6 @@ const ResumeForm = ({ onSubmit, isLoading }: ResumeFormProps) => {
                                         ) : (
                                             <p>Drop the files here...</p>
                                         )
-
-
                                     ) : (
                                         resume ? (
                                             <div>
@@ -136,19 +123,18 @@ const ResumeForm = ({ onSubmit, isLoading }: ResumeFormProps) => {
                                 </div>
                                 {/* Displaying the error message if user upload invalid file */}
                                 {fileError && (
-                                    <p>{fileError}</p>
+                                    <p className="text-red-500 mt-2">{fileError}</p>
                                 )}
                                 {/* Displaying error message if resume is missing */}
                                 {formError["resume"] && (
-                                    <p>{formError["resume"]}</p>
+                                    <p className="text-red-500 mt-2">{formError["resume"]}</p>
                                 )}
                             </div>
                         </div>
                     </section>
                 </main>
                 <main className="bg-gray-50 rounded-lg basis-1/2 p-8">
-                    <h1 className="text-xl"
-                        style={{ fontWeight: 'bold' }}>
+                    <h1 className="text-xl" style={{ fontWeight: 'bold' }}>
                         Job details
                     </h1> 
 
@@ -164,7 +150,7 @@ const ResumeForm = ({ onSubmit, isLoading }: ResumeFormProps) => {
                             className='w-full bg-white rounded-2xl p-2 border-2 mt-2' 
                         />
                         {formError["companyName"] && (
-                            <p>{formError["companyName"]}</p>
+                            <p className="text-red-500 mt-1">{formError["companyName"]}</p>
                         )}
                     </div>
 
@@ -180,7 +166,7 @@ const ResumeForm = ({ onSubmit, isLoading }: ResumeFormProps) => {
                             className='w-full bg-white rounded-2xl p-2 border-2 mt-2' 
                         />
                         {formError["jobTitle"] && (
-                            <p>{formError["jobTitle"]}</p>
+                            <p className="text-red-500 mt-1">{formError["jobTitle"]}</p>
                         )}
                     </div>
 
@@ -195,11 +181,11 @@ const ResumeForm = ({ onSubmit, isLoading }: ResumeFormProps) => {
                             className='w-full bg-white rounded-2xl p-2 border-2 mt-2 pb-30' 
                         />
                         {formError["jobDescription"] && (
-                            <p>{formError["jobDescription"]}</p>
+                            <p className="text-red-500 mt-1">{formError["jobDescription"]}</p>
                         )}
                     </div>
 
-                    {/* Submit Form Buttonß */}
+                    {/* Submit Form Button */}
                     <div className="pt-8">
                         <Button
                             type="submit"
@@ -212,7 +198,6 @@ const ResumeForm = ({ onSubmit, isLoading }: ResumeFormProps) => {
             </div>
         </form>
     </>
-
   )
 }
 
