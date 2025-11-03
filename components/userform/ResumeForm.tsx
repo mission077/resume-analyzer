@@ -41,35 +41,44 @@ const ResumeForm = ({ onSubmit, isLoading }: ResumeFormProps) => {
 
         // If every validation passes , we can set the resume state
         setFileError("")
+        console.log(acceptedFiles)
         setResume(file)
     }, [])
 
     const validateForm = () => {
         const errors = {}
 
+        console.log("Validating:", { companyName, jobTitle, jobDescription, resume })
+
         if (!companyName) errors["companyName"] = "Company name is required"
         if (!jobTitle) errors["jobTitle"] = "Job title is required"
         if (!jobDescription) errors["jobDescription"] = "Job description is required"
         if (!resume) errors["resume"] = "Resume is required"
 
+        console.log("Errors found:", errors)
         setFormError(errors)
         
+        // Failed if there are errors, Valid if there are no erros
         return Object.keys(errors).length === 0
     }
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
+        e.preventDefault() // Prevent the form from refreshing page
 
+        console.log("Form submitted")
         if (!validateForm()) {
+            console.log("Form validation failed")
             return;
         }
 
+        console.log("Form validation passed")
         const formData = new FormData()
         formData.append("companyName", companyName)
         formData.append("jobTitle", jobTitle)
         formData.append("jobDescription", jobDescription)
         formData.append("resume", resume)
 
+        // Send the valid form data to the parent component
         onSubmit(formData)
     }
 
