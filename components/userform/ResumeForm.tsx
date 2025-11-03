@@ -74,7 +74,11 @@ const ResumeForm = ({ onSubmit, isLoading }: ResumeFormProps) => {
     }
 
     // React-Dropzone props
-    const {getRootProps, getInputProps, isDragActive} = useDropzone({onDrop})
+    const {getRootProps, getInputProps, isDragActive} = useDropzone({
+        onDrop,
+        noClick: false,
+        noKeyboard: true
+    })
     
     if (!isMounted) {
         return null
@@ -96,8 +100,11 @@ const ResumeForm = ({ onSubmit, isLoading }: ResumeFormProps) => {
                             </div>
 
                             {/* Drag and Drop Resume Zone */}
-                            <div>
-                                <div {...getRootProps()} className='flex items-center bg-white rounded-2xl p-2 border-2 border-dotted mt-2 hover:cursor-pointer pt-15 pb-15 text-gray-500'>
+                            <div onClick={(e) => e.stopPropagation()}>
+                                <div 
+                                    {...getRootProps()} 
+                                    className='flex items-center bg-white rounded-2xl p-2 border-2 border-dotted mt-2 hover:cursor-pointer pt-15 pb-15 text-gray-500'
+                                >
                                     <input suppressHydrationWarning {...getInputProps()} />
                                     {isDragActive ? (
                                         resume ? (
