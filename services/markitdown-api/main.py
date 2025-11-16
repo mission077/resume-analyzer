@@ -30,8 +30,8 @@ async def convert_to_markdown(file: UploadFile = File(...)):
         # Create MarkItDown instance
         md = MarkItDown()
         
-        # Convert file to markdown
-        result = md.convert_stream(io.BytesIO(file_content), file.filename)
+        # Convert file to markdown (convert_stream only takes the stream, not filename)
+        result = md.convert_stream(io.BytesIO(file_content))
         
         return {
             "success": True,
