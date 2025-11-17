@@ -19,45 +19,62 @@ const page = () => {
       // Navigate to loading screen immediately
       router.push('/dashboard/analysis/loading')
       
-      // Send the form data to resume-builder API
-      const resumeBuilderResponse = await fetch('/api/resume-builder', {
+      // Step 1: Extract text from file
+      const extractResponse = await fetch('/api/resume/extract', {
         method: 'POST',
         body: formData
       })
       
-      if (!resumeBuilderResponse.ok) {
-        throw new Error(`HTTP error! status: ${resumeBuilderResponse.status}`)
+      if (!extractResponse.ok) {
+        throw new Error(`Extraction failed: ${extractResponse.status}`)
       }
       
-      const resumeBuilderData = await resumeBuilderResponse.json()
+      const extractData = await extractResponse.json()
       
-      if (!resumeBuilderData.data) {
-        throw new Error('Invalid response format from resume-builder API')
+      if (!extractData.success || !extractData.data?.resumeText) {
+        throw new Error(extractData.error || 'Failed to extract text from file')
       }
-
-      // Check if PDF analysis was completed in one call (only PDF files have analysis)
-      if (resumeBuilderData.data.analysis) {
-        // PDF PATH: Analysis already completed in resume-builder
-        localStorage.setItem('analysisData', JSON.stringify({ analysis: resumeBuilderData.data.analysis }))
-      } else {
-        // DOCX PATH: Need to call data-analysis API for analysis
-        const analysisPayload = {
-          resumeText: resumeBuilderData.data.resumeText
-        }
-        
-        const dataAnalysisResponse = await fetch('/api/data-analysis', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ resumeDetails: analysisPayload })
+      
+      console.log('✅ Text extracted successfully')
+      
+      // Step 2: Analyze the extracted text
+      const companyName = formData.get('companyName') as string
+      const jobTitle = formData.get('jobTitle') as string
+      const jobDescription = formData.get('jobDescription') as string
+      
+      const analyzeResponse = await fetch('/api/resume/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resumeText: extractData.data.resumeText,
+          companyName,
+          jobTitle,
+          jobDescription
         })
-        
-        if (!dataAnalysisResponse.ok) {
-          throw new Error(`HTTP error! status: ${dataAnalysisResponse.status}`)
-        }
-        
-        const dataAnalysisResult = await dataAnalysisResponse.json()
-        localStorage.setItem('analysisData', JSON.stringify(dataAnalysisResult))
+      })
+      
+      if (!analyzeResponse.ok) {
+        throw new Error(`Analysis failed: ${analyzeResponse.status}`)
       }
+      
+      const analyzeData = await analyzeResponse.json()
+      
+      if (!analyzeData.success || !analyzeData.data?.analysis) {
+        throw new Error(analyzeData.error || 'Failed to analyze resume')
+      }
+      
+      console.log('✅ Analysis completed successfully')
+      
+      // Store results in localStorage
+      localStorage.setItem('analysisData', JSON.stringify({
+        analysis: analyzeData.data.analysis,
+        data: {
+          companyName: analyzeData.data.companyName,
+          jobTitle: analyzeData.data.jobTitle,
+          jobDescription: analyzeData.data.jobDescription,
+          resumeText: analyzeData.data.resumeText
+        }
+      }))
       
       localStorage.setItem('resumeAnalysisLoading', 'false')
       

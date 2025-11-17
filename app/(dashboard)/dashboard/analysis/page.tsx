@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 // Mock data structure
 interface AnalysisData {
@@ -49,24 +49,65 @@ const mockAnalysisData: AnalysisData = {
 
 export default function AnalysisPage() {
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null)
+  const hasLoadedRef = useRef(false)
 
   useEffect(() => {
+    // Skip if we already loaded data (prevents React StrictMode double-run issue)
+    if (hasLoadedRef.current) {
+      return
+    }
+
     // Try to get real data from localStorage first
     const storedData = localStorage.getItem('analysisData')
     if (storedData) {
       try {
         const parsedData = JSON.parse(storedData)
-        // For now, use mock data structure until we parse the real API response
-        setAnalysisData(mockAnalysisData)
-        // Clear the stored data
-        localStorage.removeItem('analysisData')
+        console.log('📊 Loaded analysis data from localStorage:', parsedData)
+        console.log('🔍 Checking for analysis property:', parsedData.analysis)
+        
+        // Check if we have real analysis data
+        if (parsedData.analysis) {
+          console.log('✅ Found analysis data, setting state...')
+          const analysis = parsedData.analysis
+          // Also try to get job details and resume text from the stored data
+          const jobDetails = parsedData.data || {}
+          
+          const realData = {
+            overallScore: analysis.overallScore || 75,
+            strengths: analysis.strengths || [],
+            gaps: analysis.gaps || [],
+            recommendations: analysis.recommendations || [],
+            atsScore: analysis.atsScore || 70,
+            resumeText: jobDetails.resumeText || parsedData.resumeText || '',
+            jobDetails: {
+              company: jobDetails.companyName || 'Unknown Company',
+              title: jobDetails.jobTitle || 'Unknown Position',
+              description: jobDetails.jobDescription || 'No description provided'
+            }
+          }
+          
+          setAnalysisData(realData)
+          hasLoadedRef.current = true
+          // Clear the stored data AFTER we've successfully set it
+          localStorage.removeItem('analysisData')
+        } else {
+          // Fallback to mock data if structure is unexpected
+          console.warn('⚠️ Unexpected data structure, using mock data')
+          console.warn('⚠️ Parsed data keys:', Object.keys(parsedData))
+          console.warn('⚠️ Parsed data:', parsedData)
+          setAnalysisData(mockAnalysisData)
+          hasLoadedRef.current = true
+        }
       } catch (error) {
         console.error('Error parsing stored analysis data:', error)
         setAnalysisData(mockAnalysisData)
+        hasLoadedRef.current = true
       }
     } else {
       // Fallback to mock data if no stored data
+      console.warn('⚠️ No stored analysis data found, using mock data')
       setAnalysisData(mockAnalysisData)
+      hasLoadedRef.current = true
     }
   }, [])
 
