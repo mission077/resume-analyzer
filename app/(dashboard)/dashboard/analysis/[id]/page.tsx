@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Header } from "@/components/ui/header";
+import { SubHeader } from "@/components/subHeader";
 import { Button } from "@/components/ui/button";
 
 interface AnalysisData {
@@ -66,7 +66,7 @@ export default function AnalysisPage() {
   if (isLoading) {
     return (
       <>
-        <Header />
+        <SubHeader />
         <div className="min-h-screen flex items-center justify-center bg-background">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-violet-200 border-t-violet-500 mx-auto mb-4"></div>
@@ -80,7 +80,7 @@ export default function AnalysisPage() {
   if (error || !analysis) {
     return (
       <>
-        <Header />
+        <SubHeader />
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="bg-white rounded-lg shadow-md border border-gray-200 p-8 max-w-md text-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">

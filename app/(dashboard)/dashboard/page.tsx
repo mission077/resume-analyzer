@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Header } from "@/components/ui/header";
+import { SubHeader } from "@/components/subHeader";
 import { Button } from "@/components/ui/button";
 import * as Strings from "@/components/ui/strings";
 import jsPDF from "jspdf";
@@ -287,7 +287,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <Header />
+      <SubHeader />
       <div className="min-h-screen">
         <div className="container mx-auto px-4 py-10">
           {/* Header Section */}

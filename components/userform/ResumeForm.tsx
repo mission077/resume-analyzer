@@ -1,6 +1,6 @@
 "use client";
 
-import { Header } from "@/components/ui/header/index";
+import { SubHeader } from "@/components/subHeader";
 import React, { useCallback, useEffect, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Button } from "@/components/ui/button"
@@ -91,7 +91,7 @@ const ResumeForm = ({ onSubmit, isLoading }: ResumeFormProps) => {
 
     return (
     <>
-        <Header/>
+        <SubHeader/>
         <form suppressHydrationWarning onSubmit={handleSubmit}>
             <div className="container mx-auto px-2 flex gap-4 pt-10 pb-6">
                 <main className="bg-gray-50 rounded-lg basis-1/2 p-8">
