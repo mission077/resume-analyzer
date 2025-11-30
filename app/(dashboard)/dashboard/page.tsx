@@ -317,6 +317,43 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Create Resume Section */}
+          <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-lg border border-violet-200 p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-violet-500 rounded-lg flex items-center justify-center">
+                  <svg
+                    className="w-6 h-6 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-1">
+                    Don't have a resume?
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    Generate a professional resume tailored to your experience
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => router.push("/dashboard/resumebuilder/build")}
+                className="px-6 py-2 bg-violet-500 hover:bg-violet-600 text-white font-semibold"
+              >
+                Generate Resume
+              </Button>
+            </div>
+          </div>
+
           {/* Loading State */}
           {analysesLoading && (
             <div className="flex items-center justify-center py-12">
