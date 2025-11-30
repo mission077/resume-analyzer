@@ -1,12 +1,11 @@
-import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { Mona_Sans } from "next/font/google";
 
 // Set up custom fonts - Mona Sans
 const monaSans = Mona_Sans({
   variable: "--font-mona-sans",
-  subsets: ["latin"]
-})
+  subsets: ["latin"],
+});
 
 // Set up Metadata for SEO and UX
 export const metadata = {
@@ -20,12 +19,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body className={`${monaSans.className} antialiased pattern`}>
-          {children}
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en">
+      <body className={`${monaSans.className} antialiased pattern`}>
+        {children}
+      </body>
+    </html>
   );
 }
