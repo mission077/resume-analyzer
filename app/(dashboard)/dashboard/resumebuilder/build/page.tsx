@@ -100,6 +100,30 @@ export default function BuildResumePage() {
         localStorage.setItem("resumeBuilderAnalysisId", analysisId);
         setFormData(parsedData);
 
+        // Convert skills array to object format for the form
+        if (parsedData.skills && parsedData.skills.length > 0) {
+          const skillsObj: Record<string, string> = {
+            Languages: "",
+            "Frameworks and Libraries": "",
+            "Development Tools": "",
+          };
+          parsedData.skills.forEach((skill) => {
+            const category =
+              skill.category === "language"
+                ? "Languages"
+                : skill.category === "framework"
+                ? "Frameworks and Libraries"
+                : skill.category === "tool"
+                ? "Development Tools"
+                : skill.category;
+            if (!skillsObj[category]) {
+              skillsObj[category] = "";
+            }
+            skillsObj[category] += (skillsObj[category] ? ", " : "") + skill.name;
+          });
+          setSkillsObject(skillsObj);
+        }
+
         console.log("💾 Pre-fill data saved and form populated");
       } catch (err) {
         console.error("❌ Pre-fill error:", err);
@@ -282,6 +306,48 @@ export default function BuildResumePage() {
           : edu
       ),
     }));
+  };
+
+  // Skills helpers - Using object format for easier management
+  const [skillsObject, setSkillsObject] = useState<Record<string, string>>({
+    Languages: "",
+    "Frameworks and Libraries": "",
+    "Development Tools": "",
+  });
+
+  const updateSkillCategory = (category: string, value: string) => {
+    setSkillsObject((prev) => ({
+      ...prev,
+      [category]: value,
+    }));
+  };
+
+  const addCustomSkillCategory = () => {
+    const categoryName = prompt("Enter category name (e.g., AI Tools, Cloud Services):");
+    if (categoryName && categoryName.trim()) {
+      setSkillsObject((prev) => ({
+        ...prev,
+        [categoryName.trim()]: "",
+      }));
+    }
+  };
+
+  const removeSkillCategory = (category: string) => {
+    // Don't allow removing required categories
+    const requiredCategories = [
+      "Languages",
+      "Frameworks and Libraries",
+      "Development Tools",
+    ];
+    if (requiredCategories.includes(category)) {
+      return;
+    }
+
+    setSkillsObject((prev) => {
+      const newObj = { ...prev };
+      delete newObj[category];
+      return newObj;
+    });
   };
 
   return (
@@ -837,6 +903,62 @@ export default function BuildResumePage() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Skills Section */}
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Technical Skills</h2>
+              <Button
+                onClick={addCustomSkillCategory}
+                className="bg-violet-500 text-white hover:bg-violet-600"
+              >
+                + Add Category
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              {Object.entries(skillsObject).map(([category, skills]) => (
+                <div
+                  key={category}
+                  className="border border-gray-200 rounded-lg p-4 bg-gray-50"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      {category}
+                      {["Languages", "Frameworks and Libraries", "Development Tools"].includes(
+                        category
+                      ) && <span className="text-red-500 ml-1">*</span>}
+                    </label>
+                    {!["Languages", "Frameworks and Libraries", "Development Tools"].includes(
+                      category
+                    ) && (
+                      <Button
+                        onClick={() => removeSkillCategory(category)}
+                        className="bg-red-500 text-white hover:bg-red-600 text-sm"
+                      >
+                        Remove Category
+                      </Button>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={skills}
+                    onChange={(e) => updateSkillCategory(category, e.target.value)}
+                    placeholder="e.g., Python, JavaScript, C#, Java (comma-separated)"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                    required={
+                      ["Languages", "Frameworks and Libraries", "Development Tools"].includes(
+                        category
+                      )
+                    }
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter skills separated by commas
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Action Buttons */}
