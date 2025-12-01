@@ -491,6 +491,39 @@ export default function BuildResumePage() {
     }));
   };
 
+  // Certifications helpers
+  const addCertification = () => {
+    const newCert: Certification = {
+      id: generateId(),
+      name: "",
+      issuer: "",
+      date: "",
+      expiryDate: "",
+      credentialId: "",
+      url: "",
+    };
+    setFormData((prev) => ({
+      ...prev,
+      certifications: [...prev.certifications, newCert],
+    }));
+  };
+
+  const removeCertification = (id: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      certifications: prev.certifications.filter((cert) => cert.id !== id),
+    }));
+  };
+
+  const updateCertification = (id: string, field: keyof Certification, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      certifications: prev.certifications.map((cert) =>
+        cert.id === id ? { ...cert, [field]: value } : cert
+      ),
+    }));
+  };
+
   return (
     <>
       <SubHeader />
@@ -1238,6 +1271,144 @@ export default function BuildResumePage() {
                         <p className="text-xs text-gray-500 mt-2">
                           Tip: Use <code>**text**</code> for bold formatting
                         </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Certifications Section (Optional) */}
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Certifications</h2>
+                <p className="text-sm text-gray-500 mt-1">(Optional)</p>
+              </div>
+              <Button
+                onClick={addCertification}
+                className="bg-violet-500 text-white hover:bg-violet-600"
+              >
+                + Add Certification
+              </Button>
+            </div>
+
+            {formData.certifications.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">
+                No certifications added yet. Click "Add Certification" to get started.
+              </p>
+            ) : (
+              <div className="space-y-6">
+                {formData.certifications.map((cert, index) => (
+                  <div
+                    key={cert.id}
+                    className="border border-gray-200 rounded-lg p-4 bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Certification #{index + 1}
+                      </h3>
+                      <Button
+                        onClick={() => removeCertification(cert.id)}
+                        className="bg-red-500 text-white hover:bg-red-600 text-sm"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Certification Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={cert.name}
+                          onChange={(e) =>
+                            updateCertification(cert.id, "name", e.target.value)
+                          }
+                          placeholder="e.g., AWS Certified Solutions Architect"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Issuer <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={cert.issuer}
+                          onChange={(e) =>
+                            updateCertification(cert.id, "issuer", e.target.value)
+                          }
+                          placeholder="e.g., Amazon Web Services"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Date <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={cert.date}
+                          onChange={(e) =>
+                            updateCertification(cert.id, "date", e.target.value)
+                          }
+                          placeholder="e.g., Jan 2024"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Expiry Date (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={cert.expiryDate || ""}
+                          onChange={(e) =>
+                            updateCertification(cert.id, "expiryDate", e.target.value)
+                          }
+                          placeholder="e.g., Jan 2027"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Credential ID (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={cert.credentialId || ""}
+                          onChange={(e) =>
+                            updateCertification(cert.id, "credentialId", e.target.value)
+                          }
+                          placeholder="e.g., ABC123"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          URL (Optional)
+                        </label>
+                        <input
+                          type="url"
+                          value={cert.url || ""}
+                          onChange={(e) =>
+                            updateCertification(cert.id, "url", e.target.value)
+                          }
+                          placeholder="https://..."
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                        />
                       </div>
                     </div>
                   </div>
