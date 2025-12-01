@@ -124,6 +124,82 @@ export default function BuildResumePage() {
 
   const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+  // Experience helpers
+  const addExperience = () => {
+    const newExp: Experience = {
+      id: generateId(),
+      company: "",
+      role: "",
+      startDate: "",
+      endDate: null,
+      isCurrent: false,
+      location: "",
+      description: [],
+      type: "job",
+    };
+    setFormData((prev) => ({
+      ...prev,
+      experiences: [...prev.experiences, newExp],
+    }));
+  };
+
+  const removeExperience = (id: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      experiences: prev.experiences.filter((exp) => exp.id !== id),
+    }));
+  };
+
+  const updateExperience = (id: string, field: keyof Experience, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      experiences: prev.experiences.map((exp) =>
+        exp.id === id ? { ...exp, [field]: value } : exp
+      ),
+    }));
+  };
+
+  const addExperienceBullet = (expId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      experiences: prev.experiences.map((exp) =>
+        exp.id === expId
+          ? { ...exp, description: [...exp.description, ""] }
+          : exp
+      ),
+    }));
+  };
+
+  const removeExperienceBullet = (expId: string, bulletIndex: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      experiences: prev.experiences.map((exp) =>
+        exp.id === expId
+          ? {
+              ...exp,
+              description: exp.description.filter((_, i) => i !== bulletIndex),
+            }
+          : exp
+      ),
+    }));
+  };
+
+  const updateExperienceBullet = (expId: string, bulletIndex: number, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      experiences: prev.experiences.map((exp) =>
+        exp.id === expId
+          ? {
+              ...exp,
+              description: exp.description.map((bullet, i) =>
+                i === bulletIndex ? value : bullet
+              ),
+            }
+          : exp
+      ),
+    }));
+  };
+
   return (
     <>
       <SubHeader />
@@ -290,11 +366,215 @@ export default function BuildResumePage() {
             </div>
           </div>
 
-          {/* Placeholder for other sections - will add incrementally */}
+          {/* Experience Section */}
           <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
-            <p className="text-gray-600 text-center">
-              More sections coming next... (Experience, Education, Skills, Projects, etc.)
-            </p>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Experience</h2>
+              <Button
+                onClick={addExperience}
+                className="bg-violet-500 text-white hover:bg-violet-600"
+              >
+                + Add Experience
+              </Button>
+            </div>
+
+            {formData.experiences.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">
+                No experiences added yet. Click "Add Experience" to get started.
+              </p>
+            ) : (
+              <div className="space-y-6">
+                {formData.experiences.map((exp, index) => (
+                  <div
+                    key={exp.id}
+                    className="border border-gray-200 rounded-lg p-4 bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Experience #{index + 1}
+                      </h3>
+                      <Button
+                        onClick={() => removeExperience(exp.id)}
+                        className="bg-red-500 text-white hover:bg-red-600 text-sm"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Company <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={exp.company}
+                          onChange={(e) =>
+                            updateExperience(exp.id, "company", e.target.value)
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Position/Role <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={exp.role}
+                          onChange={(e) =>
+                            updateExperience(exp.id, "role", e.target.value)
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Type
+                        </label>
+                        <select
+                          value={exp.type || "job"}
+                          onChange={(e) =>
+                            updateExperience(
+                              exp.id,
+                              "type",
+                              e.target.value as Experience["type"]
+                            )
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                        >
+                          <option value="job">Job</option>
+                          <option value="internship">Internship</option>
+                          <option value="contract">Contract</option>
+                          <option value="freelance">Freelance</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Location <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={exp.location}
+                          onChange={(e) =>
+                            updateExperience(exp.id, "location", e.target.value)
+                          }
+                          placeholder="e.g., San Francisco, CA or Remote"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Start Date <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={exp.startDate}
+                          onChange={(e) =>
+                            updateExperience(exp.id, "startDate", e.target.value)
+                          }
+                          placeholder="e.g., Jan 2023"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          End Date
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={exp.endDate || ""}
+                            onChange={(e) =>
+                              updateExperience(
+                                exp.id,
+                                "endDate",
+                                e.target.value || null
+                              )
+                            }
+                            placeholder="e.g., Dec 2024"
+                            disabled={exp.isCurrent}
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          />
+                          <label className="flex items-center gap-2 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={exp.isCurrent}
+                              onChange={(e) => {
+                                updateExperience(exp.id, "isCurrent", e.target.checked);
+                                if (e.target.checked) {
+                                  updateExperience(exp.id, "endDate", null);
+                                }
+                              }}
+                              className="w-4 h-4 text-violet-600 focus:ring-violet-500"
+                            />
+                            <span className="text-sm text-gray-700">Current</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bullet Points */}
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Description/Bullet Points
+                        </label>
+                        <Button
+                          onClick={() => addExperienceBullet(exp.id)}
+                          className="bg-violet-500 text-white hover:bg-violet-600 text-sm"
+                        >
+                          + Add Bullet
+                        </Button>
+                      </div>
+                      {exp.description.length === 0 ? (
+                        <p className="text-gray-500 text-sm py-2">
+                          No bullet points yet. Click "Add Bullet" to add descriptions.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {exp.description.map((bullet, bulletIndex) => (
+                            <div key={bulletIndex} className="flex items-start gap-2">
+                              <span className="text-gray-500 mt-2">•</span>
+                              <textarea
+                                value={bullet}
+                                onChange={(e) =>
+                                  updateExperienceBullet(
+                                    exp.id,
+                                    bulletIndex,
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="Enter bullet point (supports **bold** markdown)"
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-y min-h-[60px]"
+                              />
+                              <Button
+                                onClick={() => removeExperienceBullet(exp.id, bulletIndex)}
+                                className="bg-red-500 text-white hover:bg-red-600 text-sm mt-1"
+                              >
+                                ×
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-500 mt-2">
+                        Tip: Use <code>**text**</code> for bold formatting
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
