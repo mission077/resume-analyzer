@@ -96,9 +96,38 @@ export default function BuildResumePage() {
 
         // Step 3: Store parsed data and populate form
         const parsedData = parseResult.data as ResumeData;
-        localStorage.setItem("resumeBuilderPrefillData", JSON.stringify(parsedData));
+        
+        // Normalize data to ensure arrays are always initialized
+        const normalizedData: ResumeData = {
+          ...parsedData,
+          projects: parsedData.projects.map((proj) => ({
+            ...proj,
+            techStack: Array.isArray(proj.techStack) ? proj.techStack : [],
+            description: Array.isArray(proj.description) 
+              ? proj.description 
+              : typeof proj.description === 'string' 
+                ? [proj.description] 
+                : [],
+          })),
+          experiences: parsedData.experiences.map((exp) => ({
+            ...exp,
+            description: Array.isArray(exp.description) 
+              ? exp.description 
+              : typeof exp.description === 'string' 
+                ? [exp.description] 
+                : [],
+          })),
+          education: parsedData.education.map((edu) => ({
+            ...edu,
+            academicAchievements: Array.isArray(edu.academicAchievements) 
+              ? edu.academicAchievements 
+              : [],
+          })),
+        };
+        
+        localStorage.setItem("resumeBuilderPrefillData", JSON.stringify(normalizedData));
         localStorage.setItem("resumeBuilderAnalysisId", analysisId);
-        setFormData(parsedData);
+        setFormData(normalizedData);
 
         // Convert skills array to object format for the form
         if (parsedData.skills && parsedData.skills.length > 0) {
@@ -348,6 +377,118 @@ export default function BuildResumePage() {
       delete newObj[category];
       return newObj;
     });
+  };
+
+  // Projects helpers
+  const addProject = () => {
+    const newProject: Project = {
+      id: generateId(),
+      name: "",
+      techStack: [],
+      description: [],
+    };
+    setFormData((prev) => ({
+      ...prev,
+      projects: [...prev.projects, newProject],
+    }));
+  };
+
+  const removeProject = (id: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      projects: prev.projects.filter((proj) => proj.id !== id),
+    }));
+  };
+
+  const updateProject = (id: string, field: keyof Project, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      projects: prev.projects.map((proj) =>
+        proj.id === id ? { ...proj, [field]: value } : proj
+      ),
+    }));
+  };
+
+  const addProjectTech = (projId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      projects: prev.projects.map((proj) =>
+        proj.id === projId
+          ? { ...proj, techStack: [...(Array.isArray(proj.techStack) ? proj.techStack : []), ""] }
+          : proj
+      ),
+    }));
+  };
+
+  const removeProjectTech = (projId: string, techIndex: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      projects: prev.projects.map((proj) =>
+        proj.id === projId
+          ? {
+              ...proj,
+              techStack: (Array.isArray(proj.techStack) ? proj.techStack : []).filter((_, i) => i !== techIndex),
+            }
+          : proj
+      ),
+    }));
+  };
+
+  const updateProjectTech = (projId: string, techIndex: number, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      projects: prev.projects.map((proj) =>
+        proj.id === projId
+          ? {
+              ...proj,
+              techStack: (Array.isArray(proj.techStack) ? proj.techStack : []).map((tech, i) =>
+                i === techIndex ? value : tech
+              ),
+            }
+          : proj
+      ),
+    }));
+  };
+
+  const addProjectBullet = (projId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      projects: prev.projects.map((proj) =>
+        proj.id === projId
+          ? { ...proj, description: [...(Array.isArray(proj.description) ? proj.description : []), ""] }
+          : proj
+      ),
+    }));
+  };
+
+  const removeProjectBullet = (projId: string, bulletIndex: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      projects: prev.projects.map((proj) =>
+        proj.id === projId
+          ? {
+              ...proj,
+              description: (Array.isArray(proj.description) ? proj.description : []).filter((_, i) => i !== bulletIndex),
+            }
+          : proj
+      ),
+    }));
+  };
+
+  const updateProjectBullet = (projId: string, bulletIndex: number, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      projects: prev.projects.map((proj) =>
+        proj.id === projId
+          ? {
+              ...proj,
+              description: (Array.isArray(proj.description) ? proj.description : []).map((bullet, i) =>
+                i === bulletIndex ? value : bullet
+              ),
+            }
+          : proj
+      ),
+    }));
   };
 
   return (
@@ -959,6 +1100,150 @@ export default function BuildResumePage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Projects Section */}
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
+              <Button
+                onClick={addProject}
+                className="bg-violet-500 text-white hover:bg-violet-600"
+              >
+                + Add Project
+              </Button>
+            </div>
+
+            {formData.projects.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">
+                No projects added yet. Click "Add Project" to get started.
+              </p>
+            ) : (
+              <div className="space-y-6">
+                {formData.projects.map((proj, index) => (
+                  <div
+                    key={proj.id}
+                    className="border border-gray-200 rounded-lg p-4 bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Project #{index + 1}
+                      </h3>
+                      <Button
+                        onClick={() => removeProject(proj.id)}
+                        className="bg-red-500 text-white hover:bg-red-600 text-sm"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Project Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={proj.name}
+                          onChange={(e) =>
+                            updateProject(proj.id, "name", e.target.value)
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      {/* Technologies */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="block text-sm font-medium text-gray-700">
+                            Technologies
+                          </label>
+                          <Button
+                            onClick={() => addProjectTech(proj.id)}
+                            className="bg-violet-500 text-white hover:bg-violet-600 text-sm"
+                          >
+                            + Add Technology
+                          </Button>
+                        </div>
+                        {(!Array.isArray(proj.techStack) || proj.techStack.length === 0) ? (
+                          <p className="text-gray-500 text-sm py-2">
+                            No technologies added yet. Click "Add Technology" to add.
+                          </p>
+                        ) : (
+                          <div className="space-y-2">
+                            {proj.techStack.map((tech, techIndex) => (
+                              <div key={techIndex} className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={tech}
+                                  onChange={(e) =>
+                                    updateProjectTech(proj.id, techIndex, e.target.value)
+                                  }
+                                  placeholder="e.g., React, Python, AWS"
+                                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                                />
+                                <Button
+                                  onClick={() => removeProjectTech(proj.id, techIndex)}
+                                  className="bg-red-500 text-white hover:bg-red-600 text-sm"
+                                >
+                                  ×
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Description/Bullet Points */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="block text-sm font-medium text-gray-700">
+                            Description/Bullet Points
+                          </label>
+                          <Button
+                            onClick={() => addProjectBullet(proj.id)}
+                            className="bg-violet-500 text-white hover:bg-violet-600 text-sm"
+                          >
+                            + Add Bullet
+                          </Button>
+                        </div>
+                        {(!Array.isArray(proj.description) || proj.description.length === 0) ? (
+                          <p className="text-gray-500 text-sm py-2">
+                            No bullet points yet. Click "Add Bullet" to add descriptions.
+                          </p>
+                        ) : (
+                          <div className="space-y-2">
+                            {(Array.isArray(proj.description) ? proj.description : []).map((bullet, bulletIndex) => (
+                              <div key={bulletIndex} className="flex items-start gap-2">
+                                <span className="text-gray-500 mt-2">•</span>
+                                <textarea
+                                  value={bullet}
+                                  onChange={(e) =>
+                                    updateProjectBullet(proj.id, bulletIndex, e.target.value)
+                                  }
+                                  placeholder="Enter bullet point (supports **bold** markdown)"
+                                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-y min-h-[60px]"
+                                />
+                                <Button
+                                  onClick={() => removeProjectBullet(proj.id, bulletIndex)}
+                                  className="bg-red-500 text-white hover:bg-red-600 text-sm mt-1"
+                                >
+                                  ×
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-xs text-gray-500 mt-2">
+                          Tip: Use <code>**text**</code> for bold formatting
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
