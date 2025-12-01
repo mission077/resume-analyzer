@@ -4,6 +4,7 @@ import { SubHeader } from "@/components/subHeader";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ResumeData, PersonalInfo, Education, Experience, Project, Skill, Certification } from "@/lib/resume/types";
+import { Button } from "@/components/ui/button";
 
 // Extracurricular interface (not in types.ts yet)
 interface Extracurricular {
@@ -18,7 +19,6 @@ interface Extracurricular {
   bullets: string[]; // Array of bullet points, supports **bold** markdown
   type: "leadership" | "volunteer" | "club" | "sports" | "other";
 }
-import { Button } from "@/components/ui/button";
 
 /**
  * Resume Builder Page
@@ -844,7 +844,7 @@ export default function BuildResumePage() {
                         </label>
                         <input
                           type="text"
-                          value={exp.role}
+                          value={exp.role || ""}
                           onChange={(e) =>
                             updateExperience(exp.id, "role", e.target.value)
                           }
@@ -1751,14 +1751,64 @@ export default function BuildResumePage() {
               Cancel
             </Button>
             <Button
-              onClick={() => {
-                console.log("Generate PDF - Coming soon");
-                // TODO: Implement PDF generation
+              onClick={async () => {
+                try {
+                  setIsLoading(true);
+                  
+                  // Validate required fields
+                  if (!resumeTitle || !formData.personalInfo.firstName || !formData.personalInfo.lastName) {
+                    alert("Please fill in required fields: Resume Title, First Name, and Last Name");
+                    return;
+                  }
+
+                  // Generate PDF via LaTeX service
+                  const response = await fetch("/api/resume/generate-pdf", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      title: resumeTitle,
+                      personalInfo: formData.personalInfo,
+                      education: formData.education,
+                      experiences: formData.experiences,
+                      projects: formData.projects,
+                      skills: skillsObject, // Send as object format
+                      certifications: formData.certifications || [],
+                      extracurriculars: formData.extracurriculars || [],
+                    }),
+                  });
+
+                  if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || "Failed to generate PDF");
+                  }
+
+                  // Get PDF blob
+                  const blob = await response.blob();
+                  
+                  // Create download link
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.href = url;
+                  link.download = `${resumeTitle || "resume"}.pdf`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+
+                  console.log("✅ PDF generated successfully");
+                } catch (error) {
+                  console.error("❌ Error generating PDF:", error);
+                  alert("Failed to generate PDF. Please try again.");
+                } finally {
+                  setIsLoading(false);
+                }
               }}
               className="bg-violet-500 text-white hover:bg-violet-600"
-              disabled={!resumeTitle || !formData.personalInfo.firstName}
+              disabled={!resumeTitle || !formData.personalInfo.firstName || isLoading}
             >
-              Generate PDF Resume
+              {isLoading ? "Generating PDF..." : "Generate PDF Resume"}
             </Button>
           </div>
         </div>
