@@ -200,6 +200,90 @@ export default function BuildResumePage() {
     }));
   };
 
+  // Education helpers
+  const addEducation = () => {
+    const newEdu: Education = {
+      id: generateId(),
+      school: "",
+      degree: "",
+      field: "",
+      location: "",
+      graduationDate: "",
+      gpa: "",
+      academicAchievements: [],
+      isCurrent: false,
+    };
+    setFormData((prev) => ({
+      ...prev,
+      education: [...prev.education, newEdu],
+    }));
+  };
+
+  const removeEducation = (id: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      education: prev.education.filter((edu) => edu.id !== id),
+    }));
+  };
+
+  const updateEducation = (id: string, field: keyof Education, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      education: prev.education.map((edu) =>
+        edu.id === id ? { ...edu, [field]: value } : edu
+      ),
+    }));
+  };
+
+  const addEducationHonor = (eduId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      education: prev.education.map((edu) =>
+        edu.id === eduId
+          ? {
+              ...edu,
+              academicAchievements: [
+                ...(edu.academicAchievements || []),
+                "",
+              ],
+            }
+          : edu
+      ),
+    }));
+  };
+
+  const removeEducationHonor = (eduId: string, honorIndex: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      education: prev.education.map((edu) =>
+        edu.id === eduId
+          ? {
+              ...edu,
+              academicAchievements: (edu.academicAchievements || []).filter(
+                (_, i) => i !== honorIndex
+              ),
+            }
+          : edu
+      ),
+    }));
+  };
+
+  const updateEducationHonor = (eduId: string, honorIndex: number, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      education: prev.education.map((edu) =>
+        edu.id === eduId
+          ? {
+              ...edu,
+              academicAchievements: (edu.academicAchievements || []).map((honor, i) =>
+                i === honorIndex ? value : honor
+              ),
+            }
+          : edu
+      ),
+    }));
+  };
+
   return (
     <>
       <SubHeader />
@@ -570,6 +654,184 @@ export default function BuildResumePage() {
                       <p className="text-xs text-gray-500 mt-2">
                         Tip: Use <code>**text**</code> for bold formatting
                       </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Education Section */}
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Education</h2>
+              <Button
+                onClick={addEducation}
+                className="bg-violet-500 text-white hover:bg-violet-600"
+              >
+                + Add Education
+              </Button>
+            </div>
+
+            {formData.education.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">
+                No education entries added yet. Click "Add Education" to get started.
+              </p>
+            ) : (
+              <div className="space-y-6">
+                {formData.education.map((edu, index) => (
+                  <div
+                    key={edu.id}
+                    className="border border-gray-200 rounded-lg p-4 bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Education #{index + 1}
+                      </h3>
+                      <Button
+                        onClick={() => removeEducation(edu.id)}
+                        className="bg-red-500 text-white hover:bg-red-600 text-sm"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          School/University <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={edu.school}
+                          onChange={(e) =>
+                            updateEducation(edu.id, "school", e.target.value)
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Degree <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={edu.degree}
+                          onChange={(e) =>
+                            updateEducation(edu.id, "degree", e.target.value)
+                          }
+                          placeholder="e.g., Bachelor's, Master's, PhD"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Field of Study <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={edu.field}
+                          onChange={(e) =>
+                            updateEducation(edu.id, "field", e.target.value)
+                          }
+                          placeholder="e.g., Computer Science"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Location <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={edu.location}
+                          onChange={(e) =>
+                            updateEducation(edu.id, "location", e.target.value)
+                          }
+                          placeholder="e.g., New York, NY"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Graduation Date <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={edu.graduationDate}
+                          onChange={(e) =>
+                            updateEducation(edu.id, "graduationDate", e.target.value)
+                          }
+                          placeholder="e.g., May 2025"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          GPA (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={edu.gpa || ""}
+                          onChange={(e) =>
+                            updateEducation(edu.id, "gpa", e.target.value)
+                          }
+                          placeholder="e.g., 3.8/4.0"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Academic Achievements/Honors */}
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Academic Achievements/Honors (Optional)
+                        </label>
+                        <Button
+                          onClick={() => addEducationHonor(edu.id)}
+                          className="bg-violet-500 text-white hover:bg-violet-600 text-sm"
+                        >
+                          + Add Honor
+                        </Button>
+                      </div>
+                      {(!edu.academicAchievements || edu.academicAchievements.length === 0) ? (
+                        <p className="text-gray-500 text-sm py-2">
+                          No honors added yet. Click "Add Honor" to add achievements.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {edu.academicAchievements.map((honor, honorIndex) => (
+                            <div key={honorIndex} className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={honor}
+                                onChange={(e) =>
+                                  updateEducationHonor(edu.id, honorIndex, e.target.value)
+                                }
+                                placeholder="e.g., Dean's List, Magna Cum Laude"
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                              />
+                              <Button
+                                onClick={() => removeEducationHonor(edu.id, honorIndex)}
+                                className="bg-red-500 text-white hover:bg-red-600 text-sm"
+                              >
+                                ×
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
