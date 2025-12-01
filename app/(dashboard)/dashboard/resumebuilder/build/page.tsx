@@ -4,6 +4,20 @@ import { SubHeader } from "@/components/subHeader";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ResumeData, PersonalInfo, Education, Experience, Project, Skill, Certification } from "@/lib/resume/types";
+
+// Extracurricular interface (not in types.ts yet)
+interface Extracurricular {
+  id: string;
+  title: string;
+  organization: string;
+  role: string;
+  startDate: string; // Format: "Month Year"
+  endDate: string | null; // Format: "Month Year", null if current
+  isCurrent: boolean;
+  description: string; // Optional description text
+  bullets: string[]; // Array of bullet points, supports **bold** markdown
+  type: "leadership" | "volunteer" | "club" | "sports" | "other";
+}
 import { Button } from "@/components/ui/button";
 
 /**
@@ -123,6 +137,12 @@ export default function BuildResumePage() {
               ? edu.academicAchievements 
               : [],
           })),
+          extracurriculars: Array.isArray(parsedData.extracurriculars)
+            ? parsedData.extracurriculars.map((extra: any) => ({
+                ...extra,
+                bullets: Array.isArray(extra.bullets) ? extra.bullets : [],
+              }))
+            : [],
         };
         
         localStorage.setItem("resumeBuilderPrefillData", JSON.stringify(normalizedData));
@@ -520,6 +540,83 @@ export default function BuildResumePage() {
       ...prev,
       certifications: prev.certifications.map((cert) =>
         cert.id === id ? { ...cert, [field]: value } : cert
+      ),
+    }));
+  };
+
+  // Extracurriculars helpers
+  const addExtracurricular = () => {
+    const newExtra: Extracurricular = {
+      id: generateId(),
+      title: "",
+      organization: "",
+      role: "",
+      startDate: "",
+      endDate: null,
+      isCurrent: false,
+      description: "",
+      bullets: [],
+      type: "leadership",
+    };
+    setFormData((prev) => ({
+      ...prev,
+      extracurriculars: [...(prev.extracurriculars || []), newExtra],
+    }));
+  };
+
+  const removeExtracurricular = (id: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      extracurriculars: (prev.extracurriculars || []).filter((extra) => extra.id !== id),
+    }));
+  };
+
+  const updateExtracurricular = (id: string, field: keyof Extracurricular, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      extracurriculars: (prev.extracurriculars || []).map((extra) =>
+        extra.id === id ? { ...extra, [field]: value } : extra
+      ),
+    }));
+  };
+
+  const addExtracurricularBullet = (extraId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      extracurriculars: (prev.extracurriculars || []).map((extra) =>
+        extra.id === extraId
+          ? { ...extra, bullets: [...(extra.bullets || []), ""] }
+          : extra
+      ),
+    }));
+  };
+
+  const removeExtracurricularBullet = (extraId: string, bulletIndex: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      extracurriculars: (prev.extracurriculars || []).map((extra) =>
+        extra.id === extraId
+          ? {
+              ...extra,
+              bullets: (extra.bullets || []).filter((_, i) => i !== bulletIndex),
+            }
+          : extra
+      ),
+    }));
+  };
+
+  const updateExtracurricularBullet = (extraId: string, bulletIndex: number, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      extracurriculars: (prev.extracurriculars || []).map((extra) =>
+        extra.id === extraId
+          ? {
+              ...extra,
+              bullets: (extra.bullets || []).map((bullet, i) =>
+                i === bulletIndex ? value : bullet
+              ),
+            }
+          : extra
       ),
     }));
   };
@@ -1410,6 +1507,234 @@ export default function BuildResumePage() {
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                         />
                       </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Extracurriculars Section (Optional) */}
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Extracurriculars</h2>
+                <p className="text-sm text-gray-500 mt-1">(Optional)</p>
+              </div>
+              <Button
+                onClick={addExtracurricular}
+                className="bg-violet-500 text-white hover:bg-violet-600"
+              >
+                + Add Extracurricular
+              </Button>
+            </div>
+
+            {(!formData.extracurriculars || formData.extracurriculars.length === 0) ? (
+              <p className="text-gray-500 text-center py-4">
+                No extracurriculars added yet. Click "Add Extracurricular" to get started.
+              </p>
+            ) : (
+              <div className="space-y-6">
+                {(formData.extracurriculars as Extracurricular[]).map((extra, index) => (
+                  <div
+                    key={extra.id}
+                    className="border border-gray-200 rounded-lg p-4 bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Extracurricular #{index + 1}
+                      </h3>
+                      <Button
+                        onClick={() => removeExtracurricular(extra.id)}
+                        className="bg-red-500 text-white hover:bg-red-600 text-sm"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Title <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={extra.title}
+                          onChange={(e) =>
+                            updateExtracurricular(extra.id, "title", e.target.value)
+                          }
+                          placeholder="e.g., Student Council President"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Organization <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={extra.organization}
+                          onChange={(e) =>
+                            updateExtracurricular(extra.id, "organization", e.target.value)
+                          }
+                          placeholder="e.g., University Student Council"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Role <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={extra.role}
+                          onChange={(e) =>
+                            updateExtracurricular(extra.id, "role", e.target.value)
+                          }
+                          placeholder="e.g., President, Member, Volunteer"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Type
+                        </label>
+                        <select
+                          value={extra.type}
+                          onChange={(e) =>
+                            updateExtracurricular(
+                              extra.id,
+                              "type",
+                              e.target.value as Extracurricular["type"]
+                            )
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                        >
+                          <option value="leadership">Leadership</option>
+                          <option value="volunteer">Volunteer</option>
+                          <option value="club">Club</option>
+                          <option value="sports">Sports</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Start Date <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={extra.startDate}
+                          onChange={(e) =>
+                            updateExtracurricular(extra.id, "startDate", e.target.value)
+                          }
+                          placeholder="e.g., Jan 2023"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          End Date
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={extra.endDate || ""}
+                            onChange={(e) =>
+                              updateExtracurricular(
+                                extra.id,
+                                "endDate",
+                                e.target.value || null
+                              )
+                            }
+                            placeholder="e.g., Dec 2024"
+                            disabled={extra.isCurrent}
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          />
+                          <label className="flex items-center gap-2 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={extra.isCurrent}
+                              onChange={(e) => {
+                                updateExtracurricular(extra.id, "isCurrent", e.target.checked);
+                                if (e.target.checked) {
+                                  updateExtracurricular(extra.id, "endDate", null);
+                                }
+                              }}
+                              className="w-4 h-4 text-violet-600 focus:ring-violet-500"
+                            />
+                            <span className="text-sm text-gray-700">Current</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Description (Optional)
+                      </label>
+                      <textarea
+                        value={extra.description || ""}
+                        onChange={(e) =>
+                          updateExtracurricular(extra.id, "description", e.target.value)
+                        }
+                        placeholder="Brief description of the activity"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-y min-h-[80px]"
+                      />
+                    </div>
+
+                    {/* Bullet Points */}
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Bullet Points (Optional)
+                        </label>
+                        <Button
+                          onClick={() => addExtracurricularBullet(extra.id)}
+                          className="bg-violet-500 text-white hover:bg-violet-600 text-sm"
+                        >
+                          + Add Bullet
+                        </Button>
+                      </div>
+                      {(!extra.bullets || extra.bullets.length === 0) ? (
+                        <p className="text-gray-500 text-sm py-2">
+                          No bullet points yet. Click "Add Bullet" to add achievements.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {extra.bullets.map((bullet, bulletIndex) => (
+                            <div key={bulletIndex} className="flex items-start gap-2">
+                              <span className="text-gray-500 mt-2">•</span>
+                              <textarea
+                                value={bullet}
+                                onChange={(e) =>
+                                  updateExtracurricularBullet(extra.id, bulletIndex, e.target.value)
+                                }
+                                placeholder="Enter bullet point (supports **bold** markdown)"
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-y min-h-[60px]"
+                              />
+                              <Button
+                                onClick={() => removeExtracurricularBullet(extra.id, bulletIndex)}
+                                className="bg-red-500 text-white hover:bg-red-600 text-sm mt-1"
+                              >
+                                ×
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-500 mt-2">
+                        Tip: Use <code>**text**</code> for bold formatting
+                      </p>
                     </div>
                   </div>
                 ))}
