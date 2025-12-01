@@ -137,7 +137,7 @@ export default function AnalysisPage() {
 
   return (
     <>
-      <Header />
+      <SubHeader />
       <div className="min-h-screen bg-background py-8">
         <div className="container mx-auto px-4">
           {/* Back Button */}
@@ -320,6 +320,25 @@ export default function AnalysisPage() {
 
           {/* Action Buttons */}
           <div className="mt-8 text-center space-x-4">
+            <Button
+              onClick={() => router.push(`/dashboard/resumebuilder/build?analysisId=${id}`)}
+              className="bg-violet-600 text-white px-6 py-3 rounded-lg hover:bg-violet-700 transition-colors font-semibold"
+            >
+              <svg
+                className="w-5 h-5 mr-2 inline"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+              Edit & Improve Resume
+            </Button>
             <Button className="bg-violet-500 text-white px-6 py-3 rounded-lg hover:bg-violet-600 transition-colors">
               Download Analysis Report
             </Button>
