@@ -52,16 +52,127 @@ export default function BuildResumePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isPrefilling, setIsPrefilling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasRestoredFromPreview, setHasRestoredFromPreview] = useState(false);
 
-  // Pre-fill logic: Fetch analysis and parse resume text
+  // SCENARIO 1: Restore from preview (runs ONCE on mount, highest priority)
   useEffect(() => {
+    console.log("🔍 Checking for saved form data in sessionStorage...");
+    
+    // Check if user is creating a NEW resume (no analysisId and no restore flag)
+    const restoreFromPreviewFlag = sessionStorage.getItem("restoreFromPreview");
+    const shouldRestoreFromPreview = !!restoreFromPreviewFlag; // Store as boolean before removing
+    const hasAnalysisId = !!analysisId;
+    
+    // Clear the restore flag immediately (so it doesn't persist across page loads)
+    if (restoreFromPreviewFlag) {
+      sessionStorage.removeItem("restoreFromPreview");
+    }
+    
+    // If creating new resume (no analysisId AND not from preview), clear old data
+    if (!hasAnalysisId && !shouldRestoreFromPreview) {
+      console.log("🧹 Creating new resume - clearing old sessionStorage data");
+      sessionStorage.removeItem("resumePreviewData");
+      sessionStorage.removeItem("resumeBuilderFormData");
+      sessionStorage.removeItem("resumeBuilderTitle");
+      sessionStorage.removeItem("resumeBuilderSkills");
+      console.log("✅ Old data cleared - form will be empty");
+      return; // Exit early - form stays empty
+    }
+    
+    let savedFormData: string | null = null;
+    let savedResumeTitle: string | null = null;
+    let savedSkillsObject: string | null = null;
+    
+    // PRIORITY 1: Check previewData FIRST (most reliable - contains everything)
+    // Only restore if we have the restore flag OR if we have an analysisId
+    const previewDataStr = sessionStorage.getItem("resumePreviewData");
+    if (previewDataStr && (shouldRestoreFromPreview || hasAnalysisId)) {
+      try {
+        const previewData = JSON.parse(previewDataStr);
+        if (previewData.resumeData) {
+          console.log("✅ [PRIORITY 1] Found form data in previewData, extracting...");
+          // Extract form data from previewData
+          savedFormData = JSON.stringify({
+            personalInfo: previewData.resumeData.personalInfo,
+            education: previewData.resumeData.education,
+            experiences: previewData.resumeData.experiences,
+            projects: previewData.resumeData.projects,
+            certifications: previewData.resumeData.certifications || [],
+            extracurriculars: previewData.resumeData.extracurriculars || [],
+          });
+          savedResumeTitle = previewData.resumeData.title || "";
+          savedSkillsObject = JSON.stringify(previewData.resumeData.skills || {});
+          console.log("✅ [PRIORITY 1] Extracted form data from previewData successfully");
+        }
+      } catch (err) {
+        console.error("❌ Error parsing previewData:", err);
+      }
+    }
+    
+    // PRIORITY 2: Fallback to direct form data keys (if previewData not found)
+    if (!savedFormData || !savedResumeTitle) {
+      console.log("🔍 [PRIORITY 2] previewData not found, checking direct keys...");
+      savedFormData = sessionStorage.getItem("resumeBuilderFormData");
+      savedResumeTitle = sessionStorage.getItem("resumeBuilderTitle");
+      savedSkillsObject = sessionStorage.getItem("resumeBuilderSkills");
+      if (savedFormData && savedResumeTitle) {
+        console.log("✅ [PRIORITY 2] Found form data in direct keys");
+      }
+    }
+    
+    console.log("📦 Saved data check:", {
+      hasFormData: !!savedFormData,
+      hasTitle: !!savedResumeTitle,
+      hasSkills: !!savedSkillsObject,
+    });
+    
+    if (savedFormData && savedResumeTitle) {
+      try {
+        console.log("🔄 SCENARIO 1: Restoring form data from preview - preserving user's changes");
+        const parsedFormData = JSON.parse(savedFormData);
+        setFormData(parsedFormData);
+        setResumeTitle(savedResumeTitle);
+        
+        if (savedSkillsObject) {
+          const parsedSkills = JSON.parse(savedSkillsObject);
+          setSkillsObject(parsedSkills);
+        }
+        
+        setHasRestoredFromPreview(true);
+        console.log("✅ Form data restored - user's changes preserved");
+      } catch (err) {
+        console.error("❌ Error restoring form data:", err);
+        // Clear corrupted data
+        sessionStorage.removeItem("resumeBuilderFormData");
+        sessionStorage.removeItem("resumeBuilderTitle");
+        sessionStorage.removeItem("resumeBuilderSkills");
+        setHasRestoredFromPreview(false);
+      }
+    } else {
+      console.log("ℹ️ No saved form data found - will proceed with analysis pre-fill or empty form");
+      setHasRestoredFromPreview(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run ONLY once on mount
+
+  // SCENARIO 2 & 3: Pre-fill from analysis OR empty form (only if NOT restored from preview)
+  useEffect(() => {
+    // CRITICAL: Check sessionStorage directly (not state) to prevent race condition
+    const savedFormData = sessionStorage.getItem("resumeBuilderFormData");
+    const savedResumeTitle = sessionStorage.getItem("resumeBuilderTitle");
+    
+    if (savedFormData && savedResumeTitle) {
+      console.log("⏭️ Skipping analysis pre-fill - form was restored from preview");
+      return;
+    }
+
     async function prefillFromAnalysis() {
       if (!analysisId) {
-        // No analysisId = User is creating from scratch
-        // Clear any old pre-fill data from localStorage to ensure clean form
+        // SCENARIO 3: No analysisId and no saved data = Manual entry
+        // Clear any old pre-fill data from localStorage
         localStorage.removeItem("resumeBuilderPrefillData");
         localStorage.removeItem("resumeBuilderAnalysisId");
-        console.log("🆕 Creating new resume from scratch - form is empty");
+        console.log("🆕 SCENARIO 3: Creating new resume from scratch - form is empty");
         return;
       }
 
@@ -222,8 +333,9 @@ export default function BuildResumePage() {
       }
     }
 
+    // Run analysis pre-fill (SCENARIO 2) - only if we didn't restore from preview
     prefillFromAnalysis();
-  }, [analysisId]);
+  }, [analysisId]); // Only depend on analysisId, not hasRestoredFromPreview
 
   // Helper functions for form updates
   const updatePersonalInfo = (field: keyof PersonalInfo, value: string) => {
@@ -1783,7 +1895,14 @@ export default function BuildResumePage() {
           {/* Action Buttons */}
           <div className="flex justify-end gap-4 mb-8">
             <Button
-              onClick={() => router.push("/dashboard")}
+              onClick={() => {
+                // Clear saved form data when canceling
+                sessionStorage.removeItem("resumeBuilderFormData");
+                sessionStorage.removeItem("resumeBuilderTitle");
+                sessionStorage.removeItem("resumeBuilderSkills");
+                sessionStorage.removeItem("resumePreviewData");
+                router.push("/dashboard");
+              }}
               className="bg-gray-500 text-white hover:bg-gray-600"
             >
               Cancel
@@ -1797,6 +1916,18 @@ export default function BuildResumePage() {
                   if (!resumeTitle || !formData.personalInfo.firstName || !formData.personalInfo.lastName) {
                     alert("Please fill in required fields: Resume Title, First Name, and Last Name");
                     return;
+                  }
+
+                  // Save form data IMMEDIATELY (before any async operations) so it's definitely saved
+                  console.log("💾 [STEP 1] Saving form data to sessionStorage BEFORE PDF generation...");
+                  try {
+                    sessionStorage.setItem("resumeBuilderFormData", JSON.stringify(formData));
+                    sessionStorage.setItem("resumeBuilderTitle", resumeTitle);
+                    sessionStorage.setItem("resumeBuilderSkills", JSON.stringify(skillsObject));
+                    console.log("✅ [STEP 1] Form data saved to sessionStorage successfully");
+                  } catch (saveError) {
+                    console.error("❌ [STEP 1] Error saving form data:", saveError);
+                    // Don't throw - continue with PDF generation even if save fails
                   }
 
                   // Generate PDF via LaTeX service
@@ -1824,22 +1955,57 @@ export default function BuildResumePage() {
 
                   // Get PDF blob
                   const blob = await response.blob();
+                  console.log("✅ [STEP 2] PDF blob received, size:", blob.size, "bytes");
                   
-                  // Create download link
-                  const url = URL.createObjectURL(blob);
-                  const link = document.createElement("a");
-                  link.href = url;
-                  link.download = `${resumeTitle || "resume"}.pdf`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  URL.revokeObjectURL(url);
-
-                  console.log("✅ PDF generated successfully");
+                  // Convert blob to base64 for sessionStorage
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    try {
+                      const base64String = reader.result as string;
+                      if (!base64String) {
+                        throw new Error("FileReader returned empty result");
+                      }
+                      const base64Data = base64String.split(",")[1]; // Remove data:application/pdf;base64, prefix
+                      
+                      // Store preview data in sessionStorage
+                      const previewData = {
+                        pdfBlob: base64Data,
+                        resumeData: {
+                          title: resumeTitle,
+                          personalInfo: formData.personalInfo,
+                          education: formData.education,
+                          experiences: formData.experiences,
+                          projects: formData.projects,
+                          skills: skillsObject, // Use skillsObject (Record<string, string>) not formData.skills
+                          certifications: formData.certifications || [],
+                          extracurriculars: formData.extracurriculars || [],
+                        },
+                        analysisId: analysisId,
+                      };
+                      
+                      sessionStorage.setItem("resumePreviewData", JSON.stringify(previewData));
+                      console.log("✅ Preview data saved to sessionStorage");
+                      
+                      // Navigate to preview page
+                      router.push("/dashboard/resumebuilder/preview");
+                    } catch (err) {
+                      console.error("❌ Error in FileReader onloadend:", err);
+                      alert("Failed to process PDF. Please try again.");
+                      setIsLoading(false);
+                    }
+                  };
+                  
+                  reader.onerror = () => {
+                    console.error("❌ FileReader error");
+                    alert("Failed to process PDF. Please try again.");
+                    setIsLoading(false);
+                  };
+                  
+                  reader.readAsDataURL(blob);
+                  console.log("✅ [STEP 3] FileReader started, will navigate to preview when complete...");
                 } catch (error) {
                   console.error("❌ Error generating PDF:", error);
                   alert("Failed to generate PDF. Please try again.");
-                } finally {
                   setIsLoading(false);
                 }
               }}
