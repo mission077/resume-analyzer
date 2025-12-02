@@ -151,6 +151,10 @@ export default function AnalysisPage() {
   const matchedKeywords = parsedAnalysis?.matched_keywords ?? [];
   const keyInsights = parsedAnalysis?.key_insights ?? 'Analysis completed successfully';
   const sectionFeedback = parsedAnalysis?.section_feedback ?? [];
+  const actionPlan = parsedAnalysis?.action_plan ?? [];
+  const skillsMatchComparison = parsedAnalysis?.skills_match_comparison ?? [];
+  const quickWins = parsedAnalysis?.quick_wins ?? [];
+  const exampleEdit = parsedAnalysis?.example_edit;
 
   // Debug: Log extracted values
   console.log("🔍 Extracted values:", {
@@ -222,56 +226,22 @@ export default function AnalysisPage() {
             </p>
           </div>
 
-          {/* Two Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column - Resume Info */}
-            <div className="space-y-6">
-              {/* Job Details Card */}
-              <div className="bg-card rounded-lg shadow-md p-6 border">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                  Job Details
-                </h2>
-                <div className="space-y-3">
-                  <div>
-                    <span className="font-medium text-gray-700">Company:</span>
-                    <p className="text-gray-900">{analysis.company_name}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Position:</span>
-                    <p className="text-gray-900">{analysis.job_title}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">
-                      Description:
-                    </span>
-                    <p className="text-gray-600 text-sm mt-1">
-                      {analysis.job_description}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Date:</span>
-                    <p className="text-gray-600 text-sm">
-                      {new Date(analysis.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Resume Preview Card */}
-              <div className="bg-card rounded-lg shadow-md p-6 border">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                  Resume Preview
-                </h2>
-                <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
-                  <pre className="text-sm text-gray-700 whitespace-pre-wrap">
-                    {analysis.resume_text || "No resume text available"}
-                  </pre>
-                </div>
-              </div>
+          {/* Disclaimer */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-blue-800">
+                <span className="font-semibold">Important:</span> All suggestions are based on your existing resume content. 
+                Only include information that is true and verifiable. We help you reframe and reorganize what you already have, 
+                not create new information.
+              </p>
             </div>
+          </div>
 
-            {/* Right Column - Comprehensive Analysis Results */}
-            <div className="space-y-6">
+          {/* Analysis Results - Single Column */}
+          <div className="space-y-6">
               {/* ATS Score Card - Prominent */}
               <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-lg shadow-md p-6 border border-violet-200">
                 <div className="text-center">
@@ -308,18 +278,103 @@ export default function AnalysisPage() {
                 </div>
               </div>
 
-              {/* Key Insights */}
-              <div className="rounded-lg shadow-md p-6 border border-blue-200 bg-blue-50">
-                <div className="flex items-start gap-4">
-                  <svg className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900 mb-3">Key Insights</h3>
-                    <p className="text-gray-800 leading-relaxed text-base">{keyInsights}</p>
+              {/* Key Insights - One Line */}
+              {keyInsights && (
+                <div className="rounded-lg shadow-md p-4 border border-blue-200 bg-blue-50">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <p className="text-gray-800 text-base font-medium">{keyInsights}</p>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* Points to Review - Top 3 */}
+              {actionPlan.length > 0 && (
+                <div className="bg-card rounded-lg shadow-md p-6 border border-violet-200">
+                  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                    <svg className="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                    Points to Review
+                  </h2>
+                  <div className="space-y-3">
+                    {actionPlan.map((item, index) => (
+                      <div key={index} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center font-bold text-sm">
+                          {item.priority}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-gray-900 font-medium text-base">{item.action}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Skills Match Comparison */}
+              {skillsMatchComparison.length > 0 && (
+                <div className="bg-card rounded-lg shadow-md p-6 border">
+                  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                    <svg className="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Skills Match Comparison
+                  </h2>
+                  <div className="space-y-3">
+                    {skillsMatchComparison.map((item, index) => (
+                      <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <span className="text-2xl flex-shrink-0">{item.icon}</span>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-gray-900">{item.skill}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              item.status === 'strong' ? 'bg-green-100 text-green-700' :
+                              item.status === 'listed_but_not_demonstrated' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-red-100 text-red-700'
+                            }`}>
+                              {item.status === 'strong' ? 'Strong' :
+                               item.status === 'listed_but_not_demonstrated' ? 'Listed but not demonstrated' :
+                               'Missing'}
+                            </span>
+                          </div>
+                          <p className="text-gray-600 text-sm">{item.evidence}</p>
+                          {item.suggestion && (
+                            <p className="text-violet-600 text-sm mt-1 font-medium">{item.suggestion}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Wins */}
+              {quickWins.length > 0 && (
+                <div className="bg-card rounded-lg shadow-md p-6 border border-green-200 bg-green-50">
+                  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Quick Wins to Boost Your Score
+                  </h2>
+                  <div className="space-y-3">
+                    {quickWins.map((win, index) => (
+                      <div key={index} className="flex items-start gap-3 p-4 bg-white rounded-lg border border-green-200">
+                        <svg className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        <div className="flex-1">
+                          <p className="text-gray-900 font-medium text-base mb-1">{win.win}</p>
+                          <p className="text-gray-600 text-sm">{win.impact}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Detailed Analysis - Collapsible */}
               {detailedAnalysis && (
@@ -420,68 +475,161 @@ export default function AnalysisPage() {
                 </div>
               </div>
 
-              {/* Missing Keywords */}
+              {/* Example Edit */}
+              {exampleEdit && (
+                <div className="bg-card rounded-lg shadow-md p-6 border border-violet-200">
+                  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                    <svg className="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Example Edit
+                  </h2>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                    <p className="text-xs text-blue-800">
+                      <span className="font-semibold">Note:</span> This example shows how to format similar content based on your existing resume. 
+                      Only use information from your actual experience.
+                    </p>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Location: <span className="font-medium text-gray-900">{exampleEdit.location}</span></p>
+                      <p className="text-sm text-gray-600">Section: <span className="font-medium text-gray-900 capitalize">{exampleEdit.section}</span></p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <h4 className="font-semibold text-red-800 mb-2 text-sm">Before:</h4>
+                        <p className="text-gray-800 text-sm leading-relaxed">{exampleEdit.before}</p>
+                      </div>
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <h4 className="font-semibold text-green-800 mb-2 text-sm">After:</h4>
+                        <p className="text-gray-800 text-sm leading-relaxed">{exampleEdit.after}</p>
+                      </div>
+                    </div>
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h4 className="font-semibold text-blue-800 mb-2 text-sm">Format Improvements:</h4>
+                      <ul className="space-y-1">
+                        {exampleEdit.improvements.map((improvement, index) => (
+                          <li key={index} className="text-gray-800 text-sm flex items-start gap-2">
+                            <span className="text-blue-600 mt-0.5">•</span>
+                            <span>{improvement}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Keywords to Emphasize - Enhanced with Placement */}
               {(missingKeywords.critical.length > 0 || missingKeywords.important.length > 0 || missingKeywords.nice_to_have.length > 0) && (
                 <div className="bg-card rounded-lg shadow-md p-6 border">
                   <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
                     <svg className="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    Missing Keywords
+                    Keywords to Emphasize
                   </h3>
                   <div className="space-y-6">
                     {missingKeywords.critical.length > 0 && (
                       <div>
-                        <h4 className="font-semibold text-red-700 mb-3 text-base">Critical (High Impact):</h4>
-                        <div className="flex flex-wrap gap-2 w-full overflow-hidden">
-                          {missingKeywords.critical.map((keyword: string, index: number) => (
-                            <span 
-                              key={index} 
-                              className="inline-flex items-center px-3 py-1.5 bg-red-100 text-red-800 rounded-full text-sm font-medium shrink-0"
-                              style={{ maxWidth: 'calc(100% - 0.5rem)' }}
-                            >
-                              {keyword}
-                            </span>
-                          ))}
+                        <h4 className="font-semibold text-red-700 mb-4 text-base">Critical (High Impact):</h4>
+                        <div className="space-y-3">
+                          {missingKeywords.critical.map((keywordItem: any, index: number) => {
+                            // Handle both old format (string) and new format (object with placement)
+                            const isOldFormat = typeof keywordItem === 'string';
+                            const keyword = isOldFormat ? keywordItem : keywordItem.keyword;
+                            const placements = isOldFormat ? [] : keywordItem.where_to_add || [];
+                            
+                            return (
+                              <div key={index} className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                                <p className="font-semibold text-red-900 mb-2 text-base">{keyword}</p>
+                                {placements.length > 0 ? (
+                                  <div className="space-y-2">
+                                    {placements.map((placement: any, pIndex: number) => (
+                                      <div key={pIndex} className="pl-3 border-l-2 border-red-300">
+                                    <p className="text-sm text-gray-700">
+                                      <span className="font-medium">{placement.location}</span> ({placement.section})
+                                    </p>
+                                    <p className="text-sm text-gray-600 mt-1">{placement.suggestion}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-gray-600">Add this keyword to relevant sections of your resume</p>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
                     {missingKeywords.important.length > 0 && (
                       <div>
-                        <h4 className="font-semibold text-orange-700 mb-3 text-base">Important (Medium Impact):</h4>
-                        <div className="flex flex-wrap gap-2 w-full overflow-hidden">
-                          {missingKeywords.important.map((keyword: string, index: number) => (
-                            <span 
-                              key={index} 
-                              className="inline-flex items-center px-3 py-1.5 bg-orange-100 text-orange-800 rounded-full text-sm font-medium shrink-0"
-                              style={{ maxWidth: 'calc(100% - 0.5rem)' }}
-                            >
-                              {keyword}
-                            </span>
-                          ))}
+                        <h4 className="font-semibold text-orange-700 mb-4 text-base">Important (Medium Impact):</h4>
+                        <div className="space-y-3">
+                          {missingKeywords.important.map((keywordItem: any, index: number) => {
+                            const isOldFormat = typeof keywordItem === 'string';
+                            const keyword = isOldFormat ? keywordItem : keywordItem.keyword;
+                            const placements = isOldFormat ? [] : keywordItem.where_to_add || [];
+                            
+                            return (
+                              <div key={index} className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                                <p className="font-semibold text-orange-900 mb-2 text-base">{keyword}</p>
+                                {placements.length > 0 ? (
+                                  <div className="space-y-2">
+                                    {placements.map((placement: any, pIndex: number) => (
+                                      <div key={pIndex} className="pl-3 border-l-2 border-orange-300">
+                                    <p className="text-sm text-gray-700">
+                                      <span className="font-medium">{placement.location}</span> ({placement.section})
+                                    </p>
+                                    <p className="text-sm text-gray-600 mt-1">{placement.suggestion}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-gray-600">Add this keyword to relevant sections of your resume</p>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
                     {missingKeywords.nice_to_have.length > 0 && (
                       <div>
-                        <h4 className="font-semibold text-yellow-700 mb-3 text-base">Nice to Have (Low Impact):</h4>
-                        <div className="flex flex-wrap gap-2 w-full overflow-hidden">
-                          {missingKeywords.nice_to_have.map((keyword: string, index: number) => (
-                            <span 
-                              key={index} 
-                              className="inline-flex items-center px-3 py-1.5 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium shrink-0"
-                              style={{ maxWidth: 'calc(100% - 0.5rem)' }}
-                            >
-                              {keyword}
-                            </span>
-                          ))}
+                        <h4 className="font-semibold text-yellow-700 mb-4 text-base">Nice to Have (Low Impact):</h4>
+                        <div className="space-y-3">
+                          {missingKeywords.nice_to_have.map((keywordItem: any, index: number) => {
+                            const isOldFormat = typeof keywordItem === 'string';
+                            const keyword = isOldFormat ? keywordItem : keywordItem.keyword;
+                            const placements = isOldFormat ? [] : keywordItem.where_to_add || [];
+                            
+                            return (
+                              <div key={index} className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <p className="font-semibold text-yellow-900 mb-2 text-base">{keyword}</p>
+                                {placements.length > 0 ? (
+                                  <div className="space-y-2">
+                                    {placements.map((placement: any, pIndex: number) => (
+                                      <div key={pIndex} className="pl-3 border-l-2 border-yellow-300">
+                                    <p className="text-sm text-gray-700">
+                                      <span className="font-medium">{placement.location}</span> ({placement.section})
+                                    </p>
+                                    <p className="text-sm text-gray-600 mt-1">{placement.suggestion}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-gray-600">Add this keyword to relevant sections of your resume</p>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
               )}
-            </div>
           </div>
 
           {/* Action Buttons */}

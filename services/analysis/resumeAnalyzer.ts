@@ -16,21 +16,63 @@ export interface SectionFeedback {
   hints: string[]
 }
 
+export interface KeywordPlacement {
+  section: 'experiences' | 'projects' | 'skills' | 'certifications'
+  location: string
+  suggestion: string
+}
+
+export interface KeywordWithPlacement {
+  keyword: string
+  where_to_add: KeywordPlacement[]
+}
+
 export interface MissingKeywords {
-  critical: string[]
-  important: string[]
-  nice_to_have: string[]
+  critical: KeywordWithPlacement[]
+  important: KeywordWithPlacement[]
+  nice_to_have: KeywordWithPlacement[]
+}
+
+export interface ActionPlanItem {
+  priority: number
+  action: string
+  time_estimate: string
+}
+
+export interface SkillsMatchComparisonItem {
+  skill: string
+  status: 'strong' | 'listed_but_not_demonstrated' | 'missing'
+  evidence: string
+  icon: '✅' | '⚠️' | '❌'
+  suggestion: string
+}
+
+export interface QuickWin {
+  win: string
+  impact: string
+}
+
+export interface ExampleEdit {
+  section: 'experiences' | 'projects' | 'skills'
+  location: string
+  before: string
+  after: string
+  improvements: string[]
 }
 
 export interface ComprehensiveAnalysis {
   ats_score: number
   status: 'Excellent Match' | 'Good Fit' | 'Needs Work' | 'Major Gaps'
+  key_insights: string
+  action_plan: ActionPlanItem[]
+  skills_match_comparison: SkillsMatchComparisonItem[]
+  quick_wins: QuickWin[]
+  missing_keywords: MissingKeywords
+  example_edit: ExampleEdit
   detailed_analysis: DetailedAnalysis
   pros: string[]
   cons: string[]
-  missing_keywords: MissingKeywords
   matched_keywords: string[]
-  key_insights: string
   section_feedback: SectionFeedback[]
 }
 
@@ -145,28 +187,124 @@ export async function analyzeResume(
         cons.push('Continue building relevant experience')
       }
       
-      // Normalize missing keywords
+      // Normalize key insights (keep it to 1 line)
+      const keyInsights = typeof analysis.key_insights === 'string' 
+        ? analysis.key_insights.trim()
+        : `Your resume shows ${status === 'Excellent Match' ? 'strong' : status === 'Good Fit' ? 'good' : 'potential'} alignment with this role.`
+      
+      // Normalize action plan (top 3)
+      const actionPlan: ActionPlanItem[] = Array.isArray(analysis.action_plan)
+        ? analysis.action_plan
+            .slice(0, 3) // Only top 3
+            .filter((item: any) => 
+              item && 
+              typeof item.priority === 'number' &&
+              typeof item.action === 'string' &&
+              typeof item.time_estimate === 'string'
+            )
+            .map((item: any) => ({
+              priority: item.priority,
+              action: item.action,
+              time_estimate: item.time_estimate
+            }))
+        : []
+      
+      // Normalize skills match comparison
+      const skillsMatchComparison: SkillsMatchComparisonItem[] = Array.isArray(analysis.skills_match_comparison)
+        ? analysis.skills_match_comparison
+            .filter((item: any) =>
+              item &&
+              typeof item.skill === 'string' &&
+              ['strong', 'listed_but_not_demonstrated', 'missing'].includes(item.status) &&
+              typeof item.evidence === 'string' &&
+              ['✅', '⚠️', '❌'].includes(item.icon)
+            )
+            .map((item: any) => ({
+              skill: item.skill,
+              status: item.status as SkillsMatchComparisonItem['status'],
+              evidence: item.evidence,
+              icon: item.icon as SkillsMatchComparisonItem['icon'],
+              suggestion: typeof item.suggestion === 'string' ? item.suggestion : ''
+            }))
+        : []
+      
+      // Normalize quick wins
+      const quickWins: QuickWin[] = Array.isArray(analysis.quick_wins)
+        ? analysis.quick_wins
+            .filter((item: any) =>
+              item &&
+              typeof item.win === 'string' &&
+              typeof item.impact === 'string'
+            )
+            .map((item: any) => ({
+              win: item.win,
+              impact: item.impact
+            }))
+        : []
+      
+      // Normalize missing keywords (with placement)
+      const normalizeKeywordWithPlacement = (kw: any): KeywordWithPlacement | null => {
+        if (!kw || typeof kw.keyword !== 'string') return null
+        const whereToAdd = Array.isArray(kw.where_to_add)
+          ? kw.where_to_add
+              .filter((placement: any) =>
+                placement &&
+                ['experiences', 'projects', 'skills', 'certifications'].includes(placement.section) &&
+                typeof placement.location === 'string' &&
+                typeof placement.suggestion === 'string'
+              )
+              .map((placement: any) => ({
+                section: placement.section as KeywordPlacement['section'],
+                location: placement.location,
+                suggestion: placement.suggestion
+              }))
+          : []
+        if (whereToAdd.length === 0) return null
+        return {
+          keyword: kw.keyword,
+          where_to_add: whereToAdd
+        }
+      }
+      
       const missingKeywords: MissingKeywords = {
-        critical: Array.isArray(analysis.missing_keywords?.critical) 
-          ? analysis.missing_keywords.critical.filter((k: any) => typeof k === 'string')
+        critical: Array.isArray(analysis.missing_keywords?.critical)
+          ? analysis.missing_keywords.critical
+              .map(normalizeKeywordWithPlacement)
+              .filter((kw: KeywordWithPlacement | null): kw is KeywordWithPlacement => kw !== null)
           : [],
-        important: Array.isArray(analysis.missing_keywords?.important) 
-          ? analysis.missing_keywords.important.filter((k: any) => typeof k === 'string')
+        important: Array.isArray(analysis.missing_keywords?.important)
+          ? analysis.missing_keywords.important
+              .map(normalizeKeywordWithPlacement)
+              .filter((kw: KeywordWithPlacement | null): kw is KeywordWithPlacement => kw !== null)
           : [],
-        nice_to_have: Array.isArray(analysis.missing_keywords?.nice_to_have) 
-          ? analysis.missing_keywords.nice_to_have.filter((k: any) => typeof k === 'string')
+        nice_to_have: Array.isArray(analysis.missing_keywords?.nice_to_have)
+          ? analysis.missing_keywords.nice_to_have
+              .map(normalizeKeywordWithPlacement)
+              .filter((kw: KeywordWithPlacement | null): kw is KeywordWithPlacement => kw !== null)
           : []
       }
+      
+      // Normalize example edit
+      const exampleEdit: ExampleEdit | null = analysis.example_edit && 
+        typeof analysis.example_edit.section === 'string' &&
+        ['experiences', 'projects', 'skills'].includes(analysis.example_edit.section) &&
+        typeof analysis.example_edit.location === 'string' &&
+        typeof analysis.example_edit.before === 'string' &&
+        typeof analysis.example_edit.after === 'string' &&
+        Array.isArray(analysis.example_edit.improvements)
+        ? {
+            section: analysis.example_edit.section as ExampleEdit['section'],
+            location: analysis.example_edit.location,
+            before: analysis.example_edit.before,
+            after: analysis.example_edit.after,
+            improvements: analysis.example_edit.improvements.filter((imp: any) => typeof imp === 'string')
+          }
+        : null
       
       // Normalize matched keywords
       const matchedKeywords = Array.isArray(analysis.matched_keywords) 
         ? analysis.matched_keywords.filter((k: any) => typeof k === 'string')
         : []
-      
-      // Normalize key insights
-      const keyInsights = typeof analysis.key_insights === 'string' 
-        ? analysis.key_insights
-        : `Your resume shows ${status === 'Excellent Match' ? 'strong' : status === 'Good Fit' ? 'good' : 'potential'} alignment with this role.`
       
       // Normalize section feedback
       const sectionFeedback: SectionFeedback[] = Array.isArray(analysis.section_feedback)
@@ -203,12 +341,29 @@ export async function analyzeResume(
       const normalizedAnalysis: ComprehensiveAnalysis = {
         ats_score: atsScore,
         status,
+        key_insights: keyInsights,
+        action_plan: actionPlan.length > 0 ? actionPlan : [
+          { priority: 1, action: 'Review and incorporate missing keywords', time_estimate: '10 min' },
+          { priority: 2, action: 'Add quantifiable metrics to achievements', time_estimate: '15 min' },
+          { priority: 3, action: 'Enhance project descriptions with relevant technologies', time_estimate: '10 min' }
+        ],
+        skills_match_comparison: skillsMatchComparison.length > 0 ? skillsMatchComparison : [],
+        quick_wins: quickWins.length > 0 ? quickWins : [
+          { win: 'Highlight your strongest projects at the top', impact: 'Better alignment with job requirements' },
+          { win: 'Add specific technologies mentioned in job description', impact: 'Increases ATS keyword matching' }
+        ],
+        missing_keywords: missingKeywords,
+        example_edit: exampleEdit || {
+          section: 'projects',
+          location: 'Your projects section',
+          before: 'Built an AI-powered system',
+          after: 'Built a multi-agent AI system with Node.js backend, implementing observability with logging and tracing',
+          improvements: ['Added multi-agent terminology', 'Specified Node.js backend', 'Included observability keywords']
+        },
         detailed_analysis: normalizedDetailedAnalysis,
         pros,
         cons,
-        missing_keywords: missingKeywords,
         matched_keywords: matchedKeywords,
-        key_insights: keyInsights,
         section_feedback: sectionFeedback
       }
       
@@ -219,6 +374,24 @@ export async function analyzeResume(
       const fallbackAnalysis: ComprehensiveAnalysis = {
         ats_score: 70,
         status: 'Good Fit',
+        key_insights: 'Your resume shows good potential alignment with this role',
+        action_plan: [
+          { priority: 1, action: 'Review and incorporate missing keywords', time_estimate: '10 min' },
+          { priority: 2, action: 'Add quantifiable metrics to achievements', time_estimate: '15 min' },
+          { priority: 3, action: 'Enhance project descriptions with relevant technologies', time_estimate: '10 min' }
+        ],
+        skills_match_comparison: [],
+        quick_wins: [
+          { win: 'Highlight your strongest projects at the top', impact: 'Better alignment with job requirements' }
+        ],
+        missing_keywords: { critical: [], important: [], nice_to_have: [] },
+        example_edit: {
+          section: 'projects',
+          location: 'Your projects section',
+          before: 'Built an AI-powered system',
+          after: 'Built a multi-agent AI system with Node.js backend, implementing observability with logging and tracing',
+          improvements: ['Added multi-agent terminology', 'Specified Node.js backend', 'Included observability keywords']
+        },
         detailed_analysis: {
           content_quality: { score: 75, feedback: 'Content quality analysis' },
           skills_match: { score: 70, feedback: 'Skills match analysis' },
@@ -228,9 +401,7 @@ export async function analyzeResume(
         },
         pros: ['Resume processed successfully'],
         cons: ['Analysis format parsing failed - please try again'],
-        missing_keywords: { critical: [], important: [], nice_to_have: [] },
         matched_keywords: [],
-        key_insights: 'Please review the analysis manually',
         section_feedback: [
           { section: 'education', status: 'safe', feedback: 'Education section', hints: [] },
           { section: 'experiences', status: 'safe', feedback: 'Experiences section', hints: [] },
