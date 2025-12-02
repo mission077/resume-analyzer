@@ -136,7 +136,7 @@ export default function PreviewPage() {
           skills: skillsObject,
           certifications: previewData.resumeData.certifications || [],
           // Note: extracurriculars not saved to DB yet (not in schema)
-          sourceType: previewData.analysisId ? "from_analysis" : "generated",
+          sourceType: previewData.analysisId ? "analyzed" : "generated",
           analysisId: previewData.analysisId,
         }),
       });

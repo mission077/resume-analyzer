@@ -33,6 +33,16 @@ export async function POST(request: NextRequest) {
       analysisId = null,
     } = body;
 
+    // Map sourceType to valid database values
+    // Database constraint allows: 'generated' or 'analyzed'
+    let validSourceType = sourceType;
+    if (sourceType === "from_analysis") {
+      validSourceType = "analyzed";
+    }
+    if (validSourceType !== "generated" && validSourceType !== "analyzed") {
+      validSourceType = "generated"; // Default fallback
+    }
+
     // Validate required fields
     if (!title || !personalInfo) {
       return NextResponse.json(
@@ -83,7 +93,7 @@ export async function POST(request: NextRequest) {
         JSON.stringify(projects || []),
         JSON.stringify(skills || {}),
         JSON.stringify(certifications || []),
-        sourceType,
+        validSourceType,
         analysisId,
       ]
     );
@@ -130,7 +140,7 @@ export async function GET(request: NextRequest) {
       SELECT 
         id,
         title,
-        source_type,
+        validSourceType,
         created_at,
         updated_at
       FROM resumes
