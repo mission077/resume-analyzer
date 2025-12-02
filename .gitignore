@@ -52,8 +52,9 @@ pip-delete-this-directory.txt
 *.egg-info/
 dist/
 build/
-# Exception: Allow resume builder route directory
-!app/(dashboard)/dashboard/resumebuilder/build/
+# Exception: Allow resume builder route directory  
+!app/(dashboard)/dashboard/resumebuilder/
+!app/(dashboard)/dashboard/resumebuilder/**
 *.egg
 .pytest_cache/
 .coverage
