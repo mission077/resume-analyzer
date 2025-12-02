@@ -111,36 +111,74 @@ export default function BuildResumePage() {
         // Step 3: Store parsed data and populate form
         const parsedData = parseResult.data as ResumeData;
         
-        // Normalize data to ensure arrays are always initialized
+        // Normalize data to ensure arrays are always initialized and strings are never undefined
         const normalizedData: ResumeData = {
           ...parsedData,
-          projects: parsedData.projects.map((proj) => ({
+          personalInfo: {
+            firstName: parsedData.personalInfo?.firstName || "",
+            lastName: parsedData.personalInfo?.lastName || "",
+            email: parsedData.personalInfo?.email || "",
+            phone: parsedData.personalInfo?.phone || "",
+            linkedin: parsedData.personalInfo?.linkedin || "",
+            github: parsedData.personalInfo?.github || "",
+            website: parsedData.personalInfo?.website || "",
+          },
+          projects: parsedData.projects?.map((proj) => ({
             ...proj,
+            name: proj.name || "",
             techStack: Array.isArray(proj.techStack) ? proj.techStack : [],
             description: Array.isArray(proj.description) 
               ? proj.description 
               : typeof proj.description === 'string' 
                 ? [proj.description] 
                 : [],
-          })),
-          experiences: parsedData.experiences.map((exp) => ({
+          })) || [],
+          experiences: parsedData.experiences?.map((exp) => ({
             ...exp,
+            company: exp.company || "",
+            role: exp.role || "",
+            location: exp.location || "",
+            startDate: exp.startDate || "",
+            endDate: exp.endDate || null,
             description: Array.isArray(exp.description) 
               ? exp.description 
               : typeof exp.description === 'string' 
                 ? [exp.description] 
                 : [],
-          })),
-          education: parsedData.education.map((edu) => ({
+            type: exp.type || "job",
+          })) || [],
+          education: parsedData.education?.map((edu) => ({
             ...edu,
+            school: edu.school || "",
+            degree: edu.degree || "",
+            field: edu.field || "",
+            location: edu.location || "",
+            graduationDate: edu.graduationDate || "",
+            gpa: edu.gpa || "",
             academicAchievements: Array.isArray(edu.academicAchievements) 
               ? edu.academicAchievements 
               : [],
-          })),
+          })) || [],
+          certifications: parsedData.certifications?.map((cert) => ({
+            ...cert,
+            name: cert.name || "",
+            issuer: cert.issuer || "",
+            date: cert.date || "",
+            expiryDate: cert.expiryDate || "",
+            credentialId: cert.credentialId || "",
+            url: cert.url || "",
+          })) || [],
           extracurriculars: Array.isArray(parsedData.extracurriculars)
             ? parsedData.extracurriculars.map((extra: any) => ({
                 ...extra,
+                title: extra.title || "",
+                organization: extra.organization || "",
+                role: extra.role || "",
+                startDate: extra.startDate || "",
+                endDate: extra.endDate || null,
+                description: extra.description || "",
                 bullets: Array.isArray(extra.bullets) ? extra.bullets : [],
+                type: extra.type || "leadership",
               }))
             : [],
         };
@@ -700,7 +738,7 @@ export default function BuildResumePage() {
                 </label>
                 <input
                   type="text"
-                  value={formData.personalInfo.firstName}
+                  value={formData.personalInfo.firstName || ""}
                   onChange={(e) => updatePersonalInfo("firstName", e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                   required
@@ -713,7 +751,7 @@ export default function BuildResumePage() {
                 </label>
                 <input
                   type="text"
-                  value={formData.personalInfo.lastName}
+                  value={formData.personalInfo.lastName || ""}
                   onChange={(e) => updatePersonalInfo("lastName", e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                   required
@@ -726,7 +764,7 @@ export default function BuildResumePage() {
                 </label>
                 <input
                   type="email"
-                  value={formData.personalInfo.email}
+                  value={formData.personalInfo.email || ""}
                   onChange={(e) => updatePersonalInfo("email", e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                   required
@@ -739,7 +777,7 @@ export default function BuildResumePage() {
                 </label>
                 <input
                   type="tel"
-                  value={formData.personalInfo.phone}
+                  value={formData.personalInfo.phone || ""}
                   onChange={(e) => updatePersonalInfo("phone", e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                   required
@@ -829,7 +867,7 @@ export default function BuildResumePage() {
                         </label>
                         <input
                           type="text"
-                          value={exp.company}
+                          value={exp.company || ""}
                           onChange={(e) =>
                             updateExperience(exp.id, "company", e.target.value)
                           }
@@ -881,7 +919,7 @@ export default function BuildResumePage() {
                         </label>
                         <input
                           type="text"
-                          value={exp.location}
+                          value={exp.location || ""}
                           onChange={(e) =>
                             updateExperience(exp.id, "location", e.target.value)
                           }
@@ -897,7 +935,7 @@ export default function BuildResumePage() {
                         </label>
                         <input
                           type="text"
-                          value={exp.startDate}
+                          value={exp.startDate || ""}
                           onChange={(e) =>
                             updateExperience(exp.id, "startDate", e.target.value)
                           }
@@ -1040,7 +1078,7 @@ export default function BuildResumePage() {
                         </label>
                         <input
                           type="text"
-                          value={edu.school}
+                          value={edu.school || ""}
                           onChange={(e) =>
                             updateEducation(edu.id, "school", e.target.value)
                           }
@@ -1055,7 +1093,7 @@ export default function BuildResumePage() {
                         </label>
                         <input
                           type="text"
-                          value={edu.degree}
+                          value={edu.degree || ""}
                           onChange={(e) =>
                             updateEducation(edu.id, "degree", e.target.value)
                           }
@@ -1071,7 +1109,7 @@ export default function BuildResumePage() {
                         </label>
                         <input
                           type="text"
-                          value={edu.field}
+                          value={edu.field || ""}
                           onChange={(e) =>
                             updateEducation(edu.id, "field", e.target.value)
                           }
@@ -1087,7 +1125,7 @@ export default function BuildResumePage() {
                         </label>
                         <input
                           type="text"
-                          value={edu.location}
+                          value={edu.location || ""}
                           onChange={(e) =>
                             updateEducation(edu.id, "location", e.target.value)
                           }
@@ -1103,7 +1141,7 @@ export default function BuildResumePage() {
                         </label>
                         <input
                           type="text"
-                          value={edu.graduationDate}
+                          value={edu.graduationDate || ""}
                           onChange={(e) =>
                             updateEducation(edu.id, "graduationDate", e.target.value)
                           }
@@ -1274,7 +1312,7 @@ export default function BuildResumePage() {
                         </label>
                         <input
                           type="text"
-                          value={proj.name}
+                          value={proj.name || ""}
                           onChange={(e) =>
                             updateProject(proj.id, "name", e.target.value)
                           }
@@ -1421,7 +1459,7 @@ export default function BuildResumePage() {
                         </label>
                         <input
                           type="text"
-                          value={cert.name}
+                          value={cert.name || ""}
                           onChange={(e) =>
                             updateCertification(cert.id, "name", e.target.value)
                           }
@@ -1437,7 +1475,7 @@ export default function BuildResumePage() {
                         </label>
                         <input
                           type="text"
-                          value={cert.issuer}
+                          value={cert.issuer || ""}
                           onChange={(e) =>
                             updateCertification(cert.id, "issuer", e.target.value)
                           }
@@ -1453,7 +1491,7 @@ export default function BuildResumePage() {
                         </label>
                         <input
                           type="text"
-                          value={cert.date}
+                          value={cert.date || ""}
                           onChange={(e) =>
                             updateCertification(cert.id, "date", e.target.value)
                           }
@@ -1559,7 +1597,7 @@ export default function BuildResumePage() {
                         </label>
                         <input
                           type="text"
-                          value={extra.title}
+                          value={extra.title || ""}
                           onChange={(e) =>
                             updateExtracurricular(extra.id, "title", e.target.value)
                           }
@@ -1575,7 +1613,7 @@ export default function BuildResumePage() {
                         </label>
                         <input
                           type="text"
-                          value={extra.organization}
+                          value={extra.organization || ""}
                           onChange={(e) =>
                             updateExtracurricular(extra.id, "organization", e.target.value)
                           }
@@ -1591,7 +1629,7 @@ export default function BuildResumePage() {
                         </label>
                         <input
                           type="text"
-                          value={extra.role}
+                          value={extra.role || ""}
                           onChange={(e) =>
                             updateExtracurricular(extra.id, "role", e.target.value)
                           }
@@ -1606,7 +1644,7 @@ export default function BuildResumePage() {
                           Type
                         </label>
                         <select
-                          value={extra.type}
+                          value={extra.type || "leadership"}
                           onChange={(e) =>
                             updateExtracurricular(
                               extra.id,
@@ -1630,7 +1668,7 @@ export default function BuildResumePage() {
                         </label>
                         <input
                           type="text"
-                          value={extra.startDate}
+                          value={extra.startDate || ""}
                           onChange={(e) =>
                             updateExtracurricular(extra.id, "startDate", e.target.value)
                           }

@@ -16,7 +16,12 @@ interface Analysis {
   overall_score: number;
   ats_score: number;
   created_at: string;
-  status: string;
+  status?: string;
+  analysis?: {
+    atsScore?: number;
+    status?: string;
+    overallScore?: number;
+  };
 }
 
 export default function DashboardPage() {
@@ -27,6 +32,7 @@ export default function DashboardPage() {
   const [analysesLoading, setAnalysesLoading] = useState(true);
   const [analysesError, setAnalysesError] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -60,8 +66,42 @@ export default function DashboardPage() {
         const result = await response.json();
         console.log("📊 API Response:", result);
         if (result.success) {
-          setAnalyses(result.data);
-          console.log("✅ Loaded analyses:", result.data);
+          // Process analyses to extract ATS score and status from analysis JSONB
+          const analysesWithDetails = result.data.map((analysis: any) => {
+            let analysisData = analysis.analysis;
+            
+            // Handle parsed JSONB or string
+            if (typeof analysisData === 'string') {
+              try {
+                analysisData = JSON.parse(analysisData);
+              } catch (e) {
+                analysisData = null;
+              }
+            }
+            
+            // Extract ATS score and status
+            const atsScore = analysisData?.atsScore || analysisData?.ats_score || analysis.ats_score || analysis.overall_score || null;
+            let status = analysisData?.status;
+            
+            // Calculate status if not present
+            if (!status && atsScore !== null) {
+              status = atsScore >= 80 ? 'Excellent Match' :
+                       atsScore >= 60 ? 'Good Fit' :
+                       atsScore >= 40 ? 'Needs Work' : 'Major Gaps';
+            }
+            
+            return {
+              ...analysis,
+              analysis: {
+                atsScore,
+                status,
+                overallScore: analysisData?.overallScore || analysis.overall_score
+              }
+            };
+          });
+          
+          setAnalyses(analysesWithDetails);
+          console.log("✅ Loaded analyses:", analysesWithDetails);
         } else {
           throw new Error(result.error || "Failed to load analyses");
         }
@@ -274,6 +314,40 @@ export default function DashboardPage() {
     }
   };
 
+  // ✅ Delete Analysis
+  const handleDeleteAnalysis = async (analysisId: number) => {
+    if (!confirm("Are you sure you want to delete this analysis? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      setDeletingId(analysisId);
+      console.log("🗑️ Deleting analysis ID:", analysisId);
+
+      const response = await fetch(`/api/analyses/${analysisId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete analysis");
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || "Failed to delete analysis");
+      }
+
+      // Remove from state
+      setAnalyses((prev) => prev.filter((a) => a.id !== analysisId));
+      console.log("✅ Analysis deleted successfully!");
+    } catch (error) {
+      console.error("❌ Error deleting analysis:", error);
+      alert("Failed to delete analysis. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -416,46 +490,60 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Score Section */}
-                  <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-100">
-                    <div className="flex items-center gap-2">
-                      <svg
-                        className="w-5 h-5 text-violet-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                        />
-                      </svg>
-                      <div>
-                        <p className="text-xs text-gray-500">Score</p>
-                        <p className="text-lg font-bold text-violet-600">
-                          {analysis.overall_score}
+                  <div className="mb-4 pb-4 border-b border-gray-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <svg
+                          className="w-5 h-5 text-violet-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                          />
+                        </svg>
+                        <div>
+                          <p className="text-xs text-gray-500">ATS Score</p>
+                          <p className="text-xl font-bold text-violet-600">
+                            {analysis.analysis?.atsScore || analysis.ats_score || analysis.overall_score || 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <svg
+                          className="w-5 h-5 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                        <p className="text-xs text-gray-500">
+                          {new Date(analysis.created_at).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <svg
-                        className="w-5 h-5 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                      <p className="text-xs text-gray-500">
-                        {new Date(analysis.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
+                    {analysis.analysis?.status && (
+                      <div className="mt-2">
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                          analysis.analysis.status === 'Excellent Match' ? 'bg-green-100 text-green-800' :
+                          analysis.analysis.status === 'Good Fit' ? 'bg-blue-100 text-blue-800' :
+                          analysis.analysis.status === 'Needs Work' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {analysis.analysis.status}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Action Buttons */}
@@ -496,20 +584,47 @@ export default function DashboardPage() {
                         "Download"
                       )}
                     </Button>
-                    <Button className="px-3 bg-transparent border border-red-300 text-red-600 hover:bg-red-50">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
+                    <Button
+                      onClick={() => handleDeleteAnalysis(analysis.id)}
+                      disabled={deletingId === analysis.id}
+                      className="px-3 bg-transparent border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                      title="Delete analysis"
+                    >
+                      {deletingId === analysis.id ? (
+                        <svg
+                          className="animate-spin h-4 w-4"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      )}
                     </Button>
                   </div>
                 </div>

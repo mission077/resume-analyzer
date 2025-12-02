@@ -43,7 +43,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Insert into database
+    // Extract ATS score for backward compatibility
+    const atsScore = analysis.ats_score ?? analysis.atsScore ?? null;
+    const overallScore = analysis.ats_score ?? analysis.atsScore ?? analysis.overallScore ?? null;
+
+    // Insert into database - save comprehensive analysis in JSONB column
     const result = await db.query(
       `
       INSERT INTO resume_analyses (
@@ -58,8 +62,9 @@ export async function POST(request: NextRequest) {
         strengths,
         gaps,
         recommendations,
+        analysis,
         status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'completed')
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'completed')
       RETURNING id
     `,
       [
@@ -69,11 +74,12 @@ export async function POST(request: NextRequest) {
         jobTitle,
         jobDescription,
         resumeText,
-        analysis.overallScore || null,
-        analysis.atsScore || null,
-        JSON.stringify(analysis.strengths || []),
-        JSON.stringify(analysis.gaps || []),
+        overallScore,
+        atsScore,
+        JSON.stringify(analysis.pros || analysis.strengths || []),
+        JSON.stringify(analysis.cons || analysis.gaps || []),
         JSON.stringify(analysis.recommendations || []),
+        JSON.stringify(analysis), // Store full comprehensive analysis
       ]
     );
 
@@ -116,6 +122,8 @@ export async function GET(request: NextRequest) {
         company_name,
         job_title,
         overall_score,
+        ats_score,
+        analysis,
         created_at
       FROM resume_analyses
       WHERE user_id = $1
