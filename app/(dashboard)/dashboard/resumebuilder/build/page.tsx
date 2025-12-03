@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ResumeData, PersonalInfo, Education, Experience, Project, Skill, Certification } from "@/lib/resume/types";
 import { Button } from "@/components/ui/button";
+import { SectionFeedback } from "@/services/analysis/resumeAnalyzer";
 
 // Extracurricular interface (not in types.ts yet)
 interface Extracurricular {
@@ -53,6 +54,9 @@ export default function BuildResumePage() {
   const [isPrefilling, setIsPrefilling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasRestoredFromPreview, setHasRestoredFromPreview] = useState(false);
+  
+  // Section feedback state
+  const [sectionFeedback, setSectionFeedback] = useState<SectionFeedback[]>([]);
 
   // SCENARIO 1: Restore from preview (runs ONCE on mount, highest priority)
   useEffect(() => {
@@ -200,6 +204,32 @@ export default function BuildResumePage() {
         }
 
         console.log("📄 Resume text extracted, length:", resumeText.length);
+
+        // Extract section_feedback from analysis.analysis.section_feedback
+        let extractedSectionFeedback: SectionFeedback[] = [];
+        if (analysis.analysis && typeof analysis.analysis === 'object') {
+          const parsedAnalysis = typeof analysis.analysis === 'string' 
+            ? JSON.parse(analysis.analysis) 
+            : analysis.analysis;
+          
+          if (Array.isArray(parsedAnalysis.section_feedback)) {
+            extractedSectionFeedback = parsedAnalysis.section_feedback.filter(
+              (sf: any) => 
+                sf && 
+                typeof sf.section === 'string' && 
+                ['education', 'experiences', 'projects', 'skills', 'certifications', 'extracurriculars', 'personalInfo'].includes(sf.section) &&
+                typeof sf.status === 'string' && 
+                ['alert', 'warning', 'safe'].includes(sf.status)
+            ).map((sf: any) => ({
+              section: sf.section as SectionFeedback['section'],
+              status: sf.status as SectionFeedback['status'],
+              feedback: typeof sf.feedback === 'string' ? sf.feedback : '',
+              hints: Array.isArray(sf.hints) ? sf.hints.filter((h: any) => typeof h === 'string') : []
+            }));
+            console.log("✅ Extracted section_feedback:", extractedSectionFeedback);
+          }
+        }
+        setSectionFeedback(extractedSectionFeedback);
 
         // Step 2: Parse resume text using AI
         const parseResponse = await fetch("/api/resume/parse", {
@@ -771,6 +801,11 @@ export default function BuildResumePage() {
     }));
   };
 
+  // Helper to get feedback for a section
+  const getFeedbackForSection = (section: SectionFeedback['section']): SectionFeedback | null => {
+    return sectionFeedback.find(sf => sf.section === section && (sf.status === 'alert' || sf.status === 'warning')) || null;
+  };
+
   return (
     <>
       <SubHeader />
@@ -838,10 +873,65 @@ export default function BuildResumePage() {
           </div>
 
           {/* Personal Information Section */}
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Personal Information
-            </h2>
+          <div 
+            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white ${
+              !isPrefilling && getFeedbackForSection('personalInfo')?.status === 'alert' 
+                ? 'border-red-500' 
+                : !isPrefilling && getFeedbackForSection('personalInfo')?.status === 'warning'
+                ? 'border-yellow-500'
+                : 'border-gray-200'
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Personal Information
+              </h2>
+              {!isPrefilling && getFeedbackForSection('personalInfo') && (
+                <div className="relative group/icon">
+                  <svg 
+                    className="w-5 h-5 text-gray-600" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                    />
+                  </svg>
+                  
+                  {/* Hover Tooltip - appears from question mark icon */}
+                  <div className={`absolute left-0 bottom-full mb-2 w-[600px] max-h-[400px] overflow-y-auto bg-white border-2 rounded-lg shadow-xl p-5 z-50 opacity-0 pointer-events-none transition-opacity duration-200 group-hover/icon:opacity-100 ${
+                    getFeedbackForSection('personalInfo')?.status === 'alert' 
+                      ? 'border-red-500' 
+                      : 'border-yellow-500'
+                  }`}>
+                    <div className={`absolute -bottom-2 left-4 w-4 h-4 bg-white border-r-2 border-b-2 transform rotate-45 ${
+                      getFeedbackForSection('personalInfo')?.status === 'alert' 
+                        ? 'border-red-500' 
+                        : 'border-yellow-500'
+                    }`}></div>
+                    <div className="relative">
+                      <p className="font-semibold mb-2 text-gray-900">{getFeedbackForSection('personalInfo')?.feedback}</p>
+                      {getFeedbackForSection('personalInfo')?.hints && getFeedbackForSection('personalInfo')!.hints.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-gray-300">
+                          <p className="font-semibold mb-2 text-xs uppercase tracking-wide text-gray-700">Questions to Consider:</p>
+                          <ul className="space-y-2">
+                            {getFeedbackForSection('personalInfo')!.hints.map((hint, index) => (
+                              <li key={index} className="text-sm leading-relaxed text-gray-700">
+                                • {hint}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -938,9 +1028,64 @@ export default function BuildResumePage() {
           </div>
 
           {/* Experience Section */}
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
+          <div 
+            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white ${
+              !isPrefilling && getFeedbackForSection('experiences')?.status === 'alert' 
+                ? 'border-red-500' 
+                : !isPrefilling && getFeedbackForSection('experiences')?.status === 'warning'
+                ? 'border-yellow-500'
+                : 'border-gray-200'
+            }`}
+          >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Experience</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-bold text-gray-900">Experience</h2>
+                {!isPrefilling && getFeedbackForSection('experiences') && (
+                  <div className="relative group/icon">
+                    <svg 
+                      className="w-5 h-5 text-gray-600" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                      />
+                    </svg>
+                    
+                    {/* Hover Tooltip - appears from question mark icon */}
+                    <div className={`absolute left-0 bottom-full mb-2 w-[600px] max-h-[400px] overflow-y-auto bg-white border-2 rounded-lg shadow-xl p-5 z-50 opacity-0 pointer-events-none transition-opacity duration-200 group-hover/icon:opacity-100 ${
+                      getFeedbackForSection('experiences')?.status === 'alert' 
+                        ? 'border-red-500' 
+                        : 'border-yellow-500'
+                    }`}>
+                      <div className={`absolute -bottom-2 left-4 w-4 h-4 bg-white border-r-2 border-b-2 transform rotate-45 ${
+                        getFeedbackForSection('experiences')?.status === 'alert' 
+                          ? 'border-red-500' 
+                          : 'border-yellow-500'
+                      }`}></div>
+                      <div className="relative">
+                        <p className="font-semibold mb-2 text-gray-900">{getFeedbackForSection('experiences')?.feedback}</p>
+                        {getFeedbackForSection('experiences')?.hints && getFeedbackForSection('experiences')!.hints.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-300">
+                            <p className="font-semibold mb-2 text-xs uppercase tracking-wide text-gray-700">Questions to Consider:</p>
+                            <ul className="space-y-2">
+                              {getFeedbackForSection('experiences')!.hints.map((hint, index) => (
+                                <li key={index} className="text-sm leading-relaxed text-gray-700">
+                                  • {hint}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
               <Button
                 onClick={addExperience}
                 className="bg-violet-500 text-white hover:bg-violet-600"
@@ -1149,9 +1294,64 @@ export default function BuildResumePage() {
           </div>
 
           {/* Education Section */}
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
+          <div 
+            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white ${
+              !isPrefilling && getFeedbackForSection('education')?.status === 'alert' 
+                ? 'border-red-500' 
+                : !isPrefilling && getFeedbackForSection('education')?.status === 'warning'
+                ? 'border-yellow-500'
+                : 'border-gray-200'
+            }`}
+          >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Education</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-bold text-gray-900">Education</h2>
+                {!isPrefilling && getFeedbackForSection('education') && (
+                  <div className="relative group/icon">
+                    <svg 
+                      className="w-5 h-5 text-gray-600" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                      />
+                    </svg>
+                    
+                    {/* Hover Tooltip - appears from question mark icon */}
+                    <div className={`absolute left-0 bottom-full mb-2 w-[600px] max-h-[400px] overflow-y-auto bg-white border-2 rounded-lg shadow-xl p-5 z-50 opacity-0 pointer-events-none transition-opacity duration-200 group-hover/icon:opacity-100 ${
+                      getFeedbackForSection('education')?.status === 'alert' 
+                        ? 'border-red-500' 
+                        : 'border-yellow-500'
+                    }`}>
+                      <div className={`absolute -bottom-2 left-4 w-4 h-4 bg-white border-r-2 border-b-2 transform rotate-45 ${
+                        getFeedbackForSection('education')?.status === 'alert' 
+                          ? 'border-red-500' 
+                          : 'border-yellow-500'
+                      }`}></div>
+                      <div className="relative">
+                        <p className="font-semibold mb-2 text-gray-900">{getFeedbackForSection('education')?.feedback}</p>
+                        {getFeedbackForSection('education')?.hints && getFeedbackForSection('education')!.hints.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-300">
+                            <p className="font-semibold mb-2 text-xs uppercase tracking-wide text-gray-700">Questions to Consider:</p>
+                            <ul className="space-y-2">
+                              {getFeedbackForSection('education')!.hints.map((hint, index) => (
+                                <li key={index} className="text-sm leading-relaxed text-gray-700">
+                                  • {hint}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
               <Button
                 onClick={addEducation}
                 className="bg-violet-500 text-white hover:bg-violet-600"
@@ -1327,9 +1527,64 @@ export default function BuildResumePage() {
           </div>
 
           {/* Skills Section */}
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
+          <div 
+            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white ${
+              !isPrefilling && getFeedbackForSection('skills')?.status === 'alert' 
+                ? 'border-red-500' 
+                : !isPrefilling && getFeedbackForSection('skills')?.status === 'warning'
+                ? 'border-yellow-500'
+                : 'border-gray-200'
+            }`}
+          >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Technical Skills</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-bold text-gray-900">Technical Skills</h2>
+                {!isPrefilling && getFeedbackForSection('skills') && (
+                  <div className="relative group/icon">
+                    <svg 
+                      className="w-5 h-5 text-gray-600" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                      />
+                    </svg>
+                    
+                    {/* Hover Tooltip - appears from question mark icon */}
+                    <div className={`absolute left-0 bottom-full mb-2 w-[600px] max-h-[400px] overflow-y-auto bg-white border-2 rounded-lg shadow-xl p-5 z-50 opacity-0 pointer-events-none transition-opacity duration-200 group-hover/icon:opacity-100 ${
+                      getFeedbackForSection('skills')?.status === 'alert' 
+                        ? 'border-red-500' 
+                        : 'border-yellow-500'
+                    }`}>
+                      <div className={`absolute -bottom-2 left-4 w-4 h-4 bg-white border-r-2 border-b-2 transform rotate-45 ${
+                        getFeedbackForSection('skills')?.status === 'alert' 
+                          ? 'border-red-500' 
+                          : 'border-yellow-500'
+                      }`}></div>
+                      <div className="relative">
+                        <p className="font-semibold mb-2 text-gray-900">{getFeedbackForSection('skills')?.feedback}</p>
+                        {getFeedbackForSection('skills')?.hints && getFeedbackForSection('skills')!.hints.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-300">
+                            <p className="font-semibold mb-2 text-xs uppercase tracking-wide text-gray-700">Questions to Consider:</p>
+                            <ul className="space-y-2">
+                              {getFeedbackForSection('skills')!.hints.map((hint, index) => (
+                                <li key={index} className="text-sm leading-relaxed text-gray-700">
+                                  • {hint}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
               <Button
                 onClick={addCustomSkillCategory}
                 className="bg-violet-500 text-white hover:bg-violet-600"
@@ -1383,9 +1638,64 @@ export default function BuildResumePage() {
           </div>
 
           {/* Projects Section */}
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
+          <div 
+            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white ${
+              !isPrefilling && getFeedbackForSection('projects')?.status === 'alert' 
+                ? 'border-red-500' 
+                : !isPrefilling && getFeedbackForSection('projects')?.status === 'warning'
+                ? 'border-yellow-500'
+                : 'border-gray-200'
+            }`}
+          >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
+                {!isPrefilling && getFeedbackForSection('projects') && (
+                  <div className="relative group/icon">
+                    <svg 
+                      className="w-5 h-5 text-gray-600" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                      />
+                    </svg>
+                    
+                    {/* Hover Tooltip - appears from question mark icon */}
+                    <div className={`absolute left-0 bottom-full mb-2 w-[600px] max-h-[400px] overflow-y-auto bg-white border-2 rounded-lg shadow-xl p-5 z-50 opacity-0 pointer-events-none transition-opacity duration-200 group-hover/icon:opacity-100 ${
+                      getFeedbackForSection('projects')?.status === 'alert' 
+                        ? 'border-red-500' 
+                        : 'border-yellow-500'
+                    }`}>
+                      <div className={`absolute -bottom-2 left-4 w-4 h-4 bg-white border-r-2 border-b-2 transform rotate-45 ${
+                        getFeedbackForSection('projects')?.status === 'alert' 
+                          ? 'border-red-500' 
+                          : 'border-yellow-500'
+                      }`}></div>
+                      <div className="relative">
+                        <p className="font-semibold mb-2 text-gray-900">{getFeedbackForSection('projects')?.feedback}</p>
+                        {getFeedbackForSection('projects')?.hints && getFeedbackForSection('projects')!.hints.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-300">
+                            <p className="font-semibold mb-2 text-xs uppercase tracking-wide text-gray-700">Questions to Consider:</p>
+                            <ul className="space-y-2">
+                              {getFeedbackForSection('projects')!.hints.map((hint, index) => (
+                                <li key={index} className="text-sm leading-relaxed text-gray-700">
+                                  • {hint}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
               <Button
                 onClick={addProject}
                 className="bg-violet-500 text-white hover:bg-violet-600"
@@ -1527,11 +1837,66 @@ export default function BuildResumePage() {
           </div>
 
           {/* Certifications Section (Optional) */}
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
+          <div 
+            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white ${
+              !isPrefilling && getFeedbackForSection('certifications')?.status === 'alert' 
+                ? 'border-red-500' 
+                : !isPrefilling && getFeedbackForSection('certifications')?.status === 'warning'
+                ? 'border-yellow-500'
+                : 'border-gray-200'
+            }`}
+          >
             <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Certifications</h2>
-                <p className="text-sm text-gray-500 mt-1">(Optional)</p>
+              <div className="flex items-center gap-2">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Certifications</h2>
+                  <p className="text-sm text-gray-500 mt-1">(Optional)</p>
+                </div>
+                {!isPrefilling && getFeedbackForSection('certifications') && (
+                  <div className="relative group/icon">
+                    <svg 
+                      className="w-5 h-5 text-gray-600" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                      />
+                    </svg>
+                    
+                    {/* Hover Tooltip - appears from question mark icon */}
+                    <div className={`absolute left-0 bottom-full mb-2 w-[600px] max-h-[400px] overflow-y-auto bg-white border-2 rounded-lg shadow-xl p-5 z-50 opacity-0 pointer-events-none transition-opacity duration-200 group-hover/icon:opacity-100 ${
+                      getFeedbackForSection('certifications')?.status === 'alert' 
+                        ? 'border-red-500' 
+                        : 'border-yellow-500'
+                    }`}>
+                      <div className={`absolute -bottom-2 left-4 w-4 h-4 bg-white border-r-2 border-b-2 transform rotate-45 ${
+                        getFeedbackForSection('certifications')?.status === 'alert' 
+                          ? 'border-red-500' 
+                          : 'border-yellow-500'
+                      }`}></div>
+                      <div className="relative">
+                        <p className="font-semibold mb-2 text-gray-900">{getFeedbackForSection('certifications')?.feedback}</p>
+                        {getFeedbackForSection('certifications')?.hints && getFeedbackForSection('certifications')!.hints.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-300">
+                            <p className="font-semibold mb-2 text-xs uppercase tracking-wide text-gray-700">Questions to Consider:</p>
+                            <ul className="space-y-2">
+                              {getFeedbackForSection('certifications')!.hints.map((hint, index) => (
+                                <li key={index} className="text-sm leading-relaxed text-gray-700">
+                                  • {hint}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               <Button
                 onClick={addCertification}
@@ -1665,11 +2030,66 @@ export default function BuildResumePage() {
           </div>
 
           {/* Extracurriculars Section (Optional) */}
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
+          <div 
+            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white ${
+              !isPrefilling && getFeedbackForSection('extracurriculars')?.status === 'alert' 
+                ? 'border-red-500' 
+                : !isPrefilling && getFeedbackForSection('extracurriculars')?.status === 'warning'
+                ? 'border-yellow-500'
+                : 'border-gray-200'
+            }`}
+          >
             <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Extracurriculars</h2>
-                <p className="text-sm text-gray-500 mt-1">(Optional)</p>
+              <div className="flex items-center gap-2">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Extracurriculars</h2>
+                  <p className="text-sm text-gray-500 mt-1">(Optional)</p>
+                </div>
+                {!isPrefilling && getFeedbackForSection('extracurriculars') && (
+                  <div className="relative group/icon">
+                    <svg 
+                      className="w-5 h-5 text-gray-600" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                      />
+                    </svg>
+                    
+                    {/* Hover Tooltip - appears from question mark icon */}
+                    <div className={`absolute left-0 bottom-full mb-2 w-[600px] max-h-[400px] overflow-y-auto bg-white border-2 rounded-lg shadow-xl p-5 z-50 opacity-0 pointer-events-none transition-opacity duration-200 group-hover/icon:opacity-100 ${
+                      getFeedbackForSection('extracurriculars')?.status === 'alert' 
+                        ? 'border-red-500' 
+                        : 'border-yellow-500'
+                    }`}>
+                      <div className={`absolute -bottom-2 left-4 w-4 h-4 bg-white border-r-2 border-b-2 transform rotate-45 ${
+                        getFeedbackForSection('extracurriculars')?.status === 'alert' 
+                          ? 'border-red-500' 
+                          : 'border-yellow-500'
+                      }`}></div>
+                      <div className="relative">
+                        <p className="font-semibold mb-2 text-gray-900">{getFeedbackForSection('extracurriculars')?.feedback}</p>
+                        {getFeedbackForSection('extracurriculars')?.hints && getFeedbackForSection('extracurriculars')!.hints.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-300">
+                            <p className="font-semibold mb-2 text-xs uppercase tracking-wide text-gray-700">Questions to Consider:</p>
+                            <ul className="space-y-2">
+                              {getFeedbackForSection('extracurriculars')!.hints.map((hint, index) => (
+                                <li key={index} className="text-sm leading-relaxed text-gray-700">
+                                  • {hint}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               <Button
                 onClick={addExtracurricular}
