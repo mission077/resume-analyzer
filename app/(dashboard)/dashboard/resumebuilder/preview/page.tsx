@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ResumeData } from "@/lib/resume/types";
 
 interface PreviewData {
-  pdfBlob: Blob;
+  pdfBlob: Blob; // After conversion from base64
   resumeData: {
     title: string;
     personalInfo: ResumeData["personalInfo"];
@@ -18,6 +18,13 @@ interface PreviewData {
     certifications: ResumeData["certifications"];
     extracurriculars: ResumeData["extracurriculars"];
   };
+  analysisId?: string | null;
+}
+
+// Type for stored data in sessionStorage (pdfBlob is base64 string)
+interface StoredPreviewData {
+  pdfBlob: string; // Base64 string when stored
+  resumeData: PreviewData["resumeData"];
   analysisId?: string | null;
 }
 
@@ -40,8 +47,10 @@ export default function PreviewPage() {
       return;
     }
 
+    let currentUrl: string | null = null;
+
     try {
-      const parsed = JSON.parse(storedData);
+      const parsed: StoredPreviewData = JSON.parse(storedData);
       
       // Convert base64 blob back to Blob
       const byteCharacters = atob(parsed.pdfBlob);
@@ -54,6 +63,7 @@ export default function PreviewPage() {
       
       // Create object URL for iframe
       const url = URL.createObjectURL(blob);
+      currentUrl = url;
       setPdfUrl(url);
       
       setPreviewData({
@@ -66,10 +76,10 @@ export default function PreviewPage() {
       setError("Failed to load preview data");
     }
 
-    // Cleanup: revoke URL when component unmounts
+    // Cleanup: revoke URL when component unmounts or pdfUrl changes
     return () => {
-      if (pdfUrl) {
-        URL.revokeObjectURL(pdfUrl);
+      if (currentUrl) {
+        URL.revokeObjectURL(currentUrl);
       }
     };
   }, [router]);

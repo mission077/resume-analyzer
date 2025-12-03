@@ -2,7 +2,7 @@
 
 import { SubHeader } from "@/components/subHeader";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ResumeData, PersonalInfo, Education, Experience, Project, Skill, Certification } from "@/lib/resume/types";
 import { Button } from "@/components/ui/button";
 import { SectionFeedback } from "@/services/analysis/resumeAnalyzer";
@@ -55,8 +55,18 @@ export default function BuildResumePage() {
   const [error, setError] = useState<string | null>(null);
   const [hasRestoredFromPreview, setHasRestoredFromPreview] = useState(false);
   
+  // Ref to track if component is mounted (for async operations)
+  const isMountedRef = useRef(true);
+  
   // Section feedback state
   const [sectionFeedback, setSectionFeedback] = useState<SectionFeedback[]>([]);
+  
+  // Skills object state (must be declared before useEffect that uses setSkillsObject)
+  const [skillsObject, setSkillsObject] = useState<Record<string, string>>({
+    Languages: "",
+    "Frameworks and Libraries": "",
+    "Development Tools": "",
+  });
 
   // SCENARIO 1: Restore from preview (runs ONCE on mount, highest priority)
   useEffect(() => {
@@ -367,6 +377,14 @@ export default function BuildResumePage() {
     prefillFromAnalysis();
   }, [analysisId]); // Only depend on analysisId, not hasRestoredFromPreview
 
+  // Cleanup: mark component as unmounted when it unmounts
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // Helper functions for form updates
   const updatePersonalInfo = (field: keyof PersonalInfo, value: string) => {
     setFormData((prev) => ({
@@ -536,13 +554,6 @@ export default function BuildResumePage() {
       ),
     }));
   };
-
-  // Skills helpers - Using object format for easier management
-  const [skillsObject, setSkillsObject] = useState<Record<string, string>>({
-    Languages: "",
-    "Frameworks and Libraries": "",
-    "Development Tools": "",
-  });
 
   const updateSkillCategory = (category: string, value: string) => {
     setSkillsObject((prev) => ({
@@ -2379,7 +2390,14 @@ export default function BuildResumePage() {
                   
                   // Convert blob to base64 for sessionStorage
                   const reader = new FileReader();
+                  
                   reader.onloadend = () => {
+                    // Guard against unmounted component
+                    if (!isMountedRef.current) {
+                      console.log("⚠️ Component unmounted, skipping navigation");
+                      return;
+                    }
+                    
                     try {
                       const base64String = reader.result as string;
                       if (!base64String) {
@@ -2406,19 +2424,26 @@ export default function BuildResumePage() {
                       sessionStorage.setItem("resumePreviewData", JSON.stringify(previewData));
                       console.log("✅ Preview data saved to sessionStorage");
                       
-                      // Navigate to preview page
-                      router.push("/dashboard/resumebuilder/preview");
+                      // Check again before navigation
+                      if (isMountedRef.current) {
+                        // Navigate to preview page
+                        router.push("/dashboard/resumebuilder/preview");
+                      }
                     } catch (err) {
                       console.error("❌ Error in FileReader onloadend:", err);
-                      alert("Failed to process PDF. Please try again.");
-                      setIsLoading(false);
+                      if (isMountedRef.current) {
+                        alert("Failed to process PDF. Please try again.");
+                        setIsLoading(false);
+                      }
                     }
                   };
                   
                   reader.onerror = () => {
                     console.error("❌ FileReader error");
-                    alert("Failed to process PDF. Please try again.");
-                    setIsLoading(false);
+                    if (isMountedRef.current) {
+                      alert("Failed to process PDF. Please try again.");
+                      setIsLoading(false);
+                    }
                   };
                   
                   reader.readAsDataURL(blob);

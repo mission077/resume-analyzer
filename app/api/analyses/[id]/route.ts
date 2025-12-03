@@ -65,17 +65,57 @@ export async function GET(
       console.log(`✅ Using comprehensive analysis from JSONB column for analysis #${analysisId}`);
     } else if (!analysisData && (row.ats_score !== null || row.overall_score !== null)) {
       // Construct old format for backward compatibility
+      // Include all required fields from ComprehensiveAnalysis interface
       console.log(`⚠️ Analysis #${analysisId} is in old format, constructing compatibility object`);
+      const score = row.ats_score ?? row.overall_score ?? 0;
       analysisData = {
-        ats_score: row.ats_score ?? row.overall_score ?? 0,
-        status: (row.ats_score ?? row.overall_score ?? 0) >= 80 ? 'Excellent Match' :
-                (row.ats_score ?? row.overall_score ?? 0) >= 60 ? 'Good Fit' :
-                (row.ats_score ?? row.overall_score ?? 0) >= 40 ? 'Needs Work' : 'Major Gaps',
-        pros: Array.isArray(row.strengths) ? row.strengths : [],
-        cons: Array.isArray(row.gaps) ? row.gaps : [],
-        missing_keywords: { critical: [], important: [], nice_to_have: [] },
-        matched_keywords: [],
+        ats_score: score,
+        status: score >= 80 ? 'Excellent Match' :
+                score >= 60 ? 'Good Fit' :
+                score >= 40 ? 'Needs Work' : 'Major Gaps',
         key_insights: 'Analysis completed',
+        action_plan: [
+          { priority: 1, action: 'Review and incorporate missing keywords', time_estimate: '10 min' },
+          { priority: 2, action: 'Add quantifiable metrics to achievements', time_estimate: '15 min' },
+          { priority: 3, action: 'Enhance project descriptions with relevant technologies', time_estimate: '10 min' }
+        ],
+        skills_match_comparison: [],
+        quick_wins: [
+          { win: 'Highlight your strongest projects at the top', impact: 'Better alignment with job requirements' },
+          { win: 'Add specific technologies mentioned in job description', impact: 'Increases ATS keyword matching' }
+        ],
+        missing_keywords: { critical: [], important: [], nice_to_have: [] },
+        example_edit: {
+          section: 'projects',
+          location: 'Your projects section',
+          before: 'Built an AI-powered system',
+          after: 'Built a multi-agent AI system with Node.js backend, implementing observability with logging and tracing',
+          improvements: ['Added multi-agent terminology', 'Specified Node.js backend', 'Included observability keywords']
+        },
+        detailed_analysis: {
+          content_quality: { score: score, feedback: 'Content quality analysis completed' },
+          skills_match: { score: score, feedback: 'Skills match analysis completed' },
+          structure_format: { score: score, feedback: 'Structure and format analysis completed' },
+          tone_style: { score: score, feedback: 'Tone and style analysis completed' },
+          experience_relevance: { score: score, feedback: 'Experience relevance analysis completed' }
+        },
+        pros: (() => {
+          try {
+            const parsed = typeof row.strengths === 'string' ? JSON.parse(row.strengths) : row.strengths;
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        })(),
+        cons: (() => {
+          try {
+            const parsed = typeof row.gaps === 'string' ? JSON.parse(row.gaps) : row.gaps;
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        })(),
+        matched_keywords: [],
         section_feedback: []
       };
     }
