@@ -1,0 +1,76 @@
+{
+  "personalInfo": {
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "phone": "555-1234",
+    "linkedin": "linkedin.com/in/johndoe",
+    "github": "github.com/johndoe"
+  },
+  "education": [
+    {
+      "school": "University Name",
+      "degree": "Bachelor's",
+      "field": "Computer Science",
+      "location": "City, State",
+      "graduationDate": "May 2025",
+      "gpa": "3.8/4.0",
+      "academicAchievements": ["Dean's List", "Summa Cum Laude"]
+    }
+  ],
+  "experiences": [
+    {
+      "company": "Tech Company",
+      "role": "Software Engineer",
+      "startDate": "Jan 2023",
+      "endDate": "Dec 2024",
+      "isCurrent": false,
+      "location": "San Francisco, CA",
+      "description": [
+        "Improved performance by **30%** using React",
+        "Led team of **5 developers**"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Web App",
+      "techStack": ["Python", "React", "AWS"],
+      "description": [
+        "Built **full-stack** application",
+        "Deployed on **AWS EC2** with CI/CD"
+      ]
+    }
+  ],
+  "skills": {
+    "Languages": "Python, Javascript, C#",
+    "Frameworks and Libraries": "React, Node.js, Express",
+    "Development Tools": "Git, Docker, VS Code"
+  },
+  "certifications": [
+    {
+      "name": "AWS Certified Solutions Architect",
+      "issuer": "Amazon Web Services",
+      "date": "Jan 2024",
+      "expiryDate": "Jan 2027",
+      "credentialId": "ABC123"
+    }
+  ],
+  "extracurriculars": [
+    {
+      "title": "Leadership",
+      "organization": "BMF Club",
+      "role": "President",
+      "startDate": "Jan 2023",
+      "endDate": null,
+      "isCurrent": true,
+      "location": "University",
+      "description": "Led club activities and organized events",
+      "bullets": [
+        "Organized **10+ events** per semester",
+        "Managed budget of **$5,000**"
+      ]
+    }
+  ]
+}
+

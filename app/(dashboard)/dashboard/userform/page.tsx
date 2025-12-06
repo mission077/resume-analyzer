@@ -117,8 +117,8 @@ const UserFormPage = () => {
       // Dispatch custom event for same-tab communication
       window.dispatchEvent(new CustomEvent("loadingComplete"));
 
-      // Navigate to analysis page
-      router.push("/dashboard/analysis");
+      // Navigate to analysis page with the analysis ID
+      router.push(`/dashboard/analysis/${saveData.data.id}`);
     } catch (error) {
       console.error("Error processing resume:", error);
       localStorage.setItem("resumeAnalysisLoading", "false");

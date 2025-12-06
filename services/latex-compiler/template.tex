@@ -1,0 +1,203 @@
+%-------------------------
+% Resume in LaTeX
+% Based on Jake Gutierrez's template
+% License : MIT
+%-------------------------
+
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+
+\pagestyle{fancy}
+\fancyhf{} % clear all header and footer fields
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Adjust margins
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-.5in}
+\addtolength{\textheight}{1.0in}
+
+\urlstyle{same}
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Sections formatting
+\titleformat{\section}{
+  \vspace{-4pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+% Custom commands
+<% raw %>
+\newcommand{\resumeItem}[1]{
+  \item\small{
+    {#1 \vspace{-2pt}}
+  }
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubSubheading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \textit{\small#1} & \textit{\small #2} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \small#1 & #2 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
+<% endraw %>
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+%-------------------------------------------
+%%%%%%  RESUME STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+%----------HEADING----------
+\begin{center}
+    \textbf{\Huge \scshape << personalInfo.firstName >> << personalInfo.lastName >>} \\ \vspace{1pt}
+    \small << personalInfo.phone >><% if personalInfo.email %> $|$ \href{mailto:<< personalInfo.email >>}{{\underline{ << personalInfo.email >> }}}<% endif %><% if personalInfo.linkedin %> $|$ 
+    \href{https://<< personalInfo.linkedin >>}{{\underline{ << personalInfo.linkedin >> }}}<% endif %><% if personalInfo.github %> $|$
+    \href{https://<< personalInfo.github >>}{{\underline{ << personalInfo.github >> }}}<% endif %>
+\end{center}
+
+%-----------EDUCATION-----------
+<% if education %>
+\section{Education}
+  \resumeSubHeadingListStart
+<% for edu in education %>
+    \resumeSubheading
+      { << edu.school >> }{ << edu.location >> }
+      { << edu.degree >><% if edu.field %> in << edu.field >><% endif %> }{ << edu.graduationDate >> }
+<% if edu.gpa or (edu.academicAchievements and edu.academicAchievements|length > 0) %>
+      \resumeItemListStart
+<% if edu.gpa and edu.academicAchievements and edu.academicAchievements|length > 0 %>
+        \resumeItem{ Academic Achievements: GPA: << edu.gpa >>, <% for achievement in edu.academicAchievements %><< achievement >><% if not loop.last %>, <% endif %><% endfor %> }
+<% elif edu.gpa %>
+        \resumeItem{ GPA: << edu.gpa >> }
+<% elif edu.academicAchievements and edu.academicAchievements|length > 0 %>
+<% for achievement in edu.academicAchievements %>
+        \resumeItem{ << achievement >> }
+<% endfor %>
+<% endif %>
+      \resumeItemListEnd
+<% endif %>
+<% endfor %>
+  \resumeSubHeadingListEnd
+<% endif %>
+
+<% if certifications and certifications|length > 0 %>
+%-----------CERTIFICATIONS-----------
+\section{Certifications}
+  \resumeSubHeadingListStart
+<% for cert in certifications %>
+    \resumeSubheading
+      { << cert.name >> }{ << cert.date >><% if cert.expiryDate %> -- << cert.expiryDate >><% endif %> }
+      { << cert.issuer >> }<% if cert.credentialId %> { Credential ID: << cert.credentialId >> }<% else %> { }<% endif %>
+<% endfor %>
+  \resumeSubHeadingListEnd
+<% endif %>
+
+%-----------EXPERIENCE-----------
+<% if experiences %>
+\section{Experience}
+  \resumeSubHeadingListStart
+<% for exp in experiences %>
+    \resumeSubheading
+      { << exp.role >> }{ << exp.startDate >> -- <% if exp.isCurrent %>Present<% else %><< exp.endDate >><% endif %> }
+      { << exp.company >> }{ << exp.location >> }
+      \resumeItemListStart
+<% for bullet in exp.description %>
+        \resumeItem{ << bullet >> }
+<% endfor %>
+      \resumeItemListEnd
+<% endfor %>
+  \resumeSubHeadingListEnd
+<% endif %>
+
+%-----------PROJECTS-----------
+<% if projects %>
+\section{Projects}
+    \resumeSubHeadingListStart
+<% for proj in projects %>
+      \resumeProjectHeading
+          {\textbf{ << proj.name >> } $|$ \emph{ << proj.techStack|join(', ') >> }}{}
+          \resumeItemListStart
+<% for bullet in proj.description %>
+            \resumeItem{ << bullet >> }
+<% endfor %>
+          \resumeItemListEnd
+<% endfor %>
+    \resumeSubHeadingListEnd
+<% endif %>
+
+%-----------TECHNICAL SKILLS-----------
+<% if skills %>
+\section{Technical Skills}
+ \begin{itemize}[leftmargin=0.15in, label={}]
+    \small{\item{
+<% set skill_items = skills.items()|list %>
+<% for category, skills_list in skill_items %>
+     \textbf{ << category|capitalize_first >> }{: << skills_list >> }<% if not loop.last %> \\<% endif %>
+<% endfor %>
+    }}
+ \end{itemize}
+<% endif %>
+
+<% if extracurriculars and extracurriculars|length > 0 %>
+%-----------EXTRACURRICULAR-----------
+\section{Extracurricular}
+  \resumeSubHeadingListStart
+<% for extra in extracurriculars %>
+    \resumeSubheading
+      { << extra.title >> at << extra.organization >> }{ << extra.startDate >> -- <% if extra.isCurrent %>Present<% else %><< extra.endDate >><% endif %> }
+      { << extra.role >> }{<% if extra.location %> << extra.location >><% else %> <% endif %>}
+<% if extra.description %>
+      \resumeItemListStart
+        \resumeItem{ << extra.description >> }
+      \resumeItemListEnd
+<% endif %>
+<% if extra.bullets and extra.bullets|length > 0 %>
+      \resumeItemListStart
+<% for bullet in extra.bullets %>
+        \resumeItem{ << bullet >> }
+<% endfor %>
+      \resumeItemListEnd
+<% endif %>
+<% endfor %>
+  \resumeSubHeadingListEnd
+<% endif %>
+
+%-------------------------------------------
+\end{document}
+
