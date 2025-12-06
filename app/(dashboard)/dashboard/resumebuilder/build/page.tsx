@@ -7,9 +7,6 @@ import { ResumeData, PersonalInfo, Education, Experience, Project, Skill, Certif
 import { Button } from "@/components/ui/button";
 import { SectionFeedback } from "@/services/analysis/resumeAnalyzer";
 
-// Force dynamic rendering - this page uses client-side features that can't be prerendered
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 // Extracurricular interface (not in types.ts yet)
 interface Extracurricular {
