@@ -45,11 +45,41 @@ services:
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       NODE_ENV: production
+      NEXT_PUBLIC_LATEX_API_URL: http://latex-compiler:8001
+      MARKITDOWN_API_URL: http://markitdown-api:8000
     depends_on:
       postgres:
         condition: service_healthy
+      latex-compiler:
+        condition: service_started
+      markitdown-api:
+        condition: service_started
     volumes:
       - ./public/uploads:/app/public/uploads
+    networks:
+      - resume-analyzer-network
+
+  # LaTeX Compiler Service
+  latex-compiler:
+    build:
+      context: ./services/latex-compiler
+      dockerfile: Dockerfile
+    container_name: resume_analyzer_latex
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    networks:
+      - resume-analyzer-network
+
+  # MarkItDown API Service (PDF Parser)
+  markitdown-api:
+    build:
+      context: ./services/markitdown-api
+      dockerfile: Dockerfile
+    container_name: resume_analyzer_markitdown
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
     networks:
       - resume-analyzer-network
 

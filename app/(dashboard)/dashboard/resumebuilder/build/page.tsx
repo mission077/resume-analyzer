@@ -2,10 +2,14 @@
 
 import { SubHeader } from "@/components/subHeader";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { ResumeData, PersonalInfo, Education, Experience, Project, Skill, Certification } from "@/lib/resume/types";
 import { Button } from "@/components/ui/button";
 import { SectionFeedback } from "@/services/analysis/resumeAnalyzer";
+
+// Force dynamic rendering - this page uses client-side features that can't be prerendered
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // Extracurricular interface (not in types.ts yet)
 interface Extracurricular {
@@ -22,10 +26,11 @@ interface Extracurricular {
 }
 
 /**
- * Resume Builder Page
+ * Resume Builder Page Content
  * Supports pre-filling from analysis when analysisId query param is present
+ * This component uses useSearchParams() and must be wrapped in Suspense
  */
-export default function BuildResumePage() {
+function BuildResumePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const analysisId = searchParams.get("analysisId");
@@ -2462,6 +2467,29 @@ export default function BuildResumePage() {
           </div>
         </div>
       </div>
+    </>
+  );
+}
+
+/**
+ * Resume Builder Page (wrapped in Suspense for useSearchParams)
+ * Next.js 15 requires useSearchParams() to be wrapped in Suspense
+ */
+export default function BuildResumePage() {
+  return (
+    <>
+      <Suspense 
+        fallback={
+          <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading resume builder...</p>
+            </div>
+          </div>
+        }
+      >
+        <BuildResumePageContent />
+      </Suspense>
     </>
   );
 }
