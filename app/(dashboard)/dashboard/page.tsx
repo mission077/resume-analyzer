@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { SubHeader } from "@/components/subHeader";
 import { Button } from "@/components/ui/button";
 import * as Strings from "@/components/ui/strings";
@@ -33,6 +34,13 @@ export default function DashboardPage() {
   const [analysesError, setAnalysesError] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState<number | null>(null);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -118,6 +126,17 @@ export default function DashboardPage() {
       fetchAnalyses();
     }
   }, [user]);
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && showDeleteModal) {
+        setShowDeleteModal(null);
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [showDeleteModal]);
 
   // ✅ Download Analysis Report as PDF
   const handleDownloadReport = async (analysisId: number) => {
@@ -315,10 +334,17 @@ export default function DashboardPage() {
   };
 
   // ✅ Delete Analysis
-  const handleDeleteAnalysis = async (analysisId: number) => {
-    if (!confirm("Are you sure you want to delete this analysis? This action cannot be undone.")) {
-      return;
-    }
+  const handleDeleteClick = (analysisId: number) => {
+    console.log("🗑️ Delete button clicked for analysis:", analysisId);
+    setShowDeleteModal(analysisId);
+    console.log("✅ Modal state set to:", analysisId);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!showDeleteModal) return;
+
+    const analysisId = showDeleteModal;
+    setShowDeleteModal(null);
 
     try {
       setDeletingId(analysisId);
@@ -340,12 +366,20 @@ export default function DashboardPage() {
       // Remove from state
       setAnalyses((prev) => prev.filter((a) => a.id !== analysisId));
       console.log("✅ Analysis deleted successfully!");
+      
+      // Show success toast
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
     } catch (error) {
       console.error("❌ Error deleting analysis:", error);
       alert("Failed to delete analysis. Please try again.");
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(null);
   };
 
   if (isLoading) {
@@ -585,7 +619,12 @@ export default function DashboardPage() {
                       )}
                     </Button>
                     <Button
-                      onClick={() => handleDeleteAnalysis(analysis.id)}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDeleteClick(analysis.id);
+                      }}
                       disabled={deletingId === analysis.id}
                       className="px-3 bg-transparent border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50"
                       title="Delete analysis"
@@ -664,6 +703,106 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal - Rendered via Portal */}
+      {isMounted && showDeleteModal && createPortal(
+        <div 
+          className="fixed inset-0 bg-gray-900 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-[9999]"
+          onClick={handleDeleteCancel}
+        >
+          <div 
+            className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-6 h-6 text-red-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Delete Analysis
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Are you sure you want to delete this analysis? This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button
+                onClick={handleDeleteCancel}
+                className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDeleteConfirm}
+                disabled={deletingId === showDeleteModal}
+                className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {deletingId === showDeleteModal ? (
+                  <span className="flex items-center gap-2">
+                    <svg
+                      className="animate-spin h-4 w-4"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Deleting...
+                  </span>
+                ) : (
+                  "Delete"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Success Toast Notification */}
+      {showSuccessToast && (
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3 animate-in slide-in-from-top-5">
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+          <span className="font-medium">Analysis deleted successfully</span>
+        </div>
+      )}
     </>
   );
 }
