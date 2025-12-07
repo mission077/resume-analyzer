@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
 import { SubHeader } from "@/components/subHeader";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,12 @@ export default function AnalysisPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     async function fetchAnalysis() {
@@ -196,7 +203,7 @@ export default function AnalysisPage() {
               Back to Dashboard
             </Button>
             <Button
-              onClick={() => router.push(`/dashboard/resumebuilder/build?analysisId=${id}`)}
+              onClick={() => setShowEditModal(true)}
               className="bg-violet-500 text-white px-6 py-3 rounded-lg hover:bg-violet-600 transition-colors"
             >
               <svg
@@ -633,10 +640,7 @@ export default function AnalysisPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="mt-8 text-center space-x-4">
-            <Button className="bg-violet-500 text-white px-6 py-3 rounded-lg hover:bg-violet-600 transition-colors">
-              Download Analysis Report
-            </Button>
+          <div className="mt-8 text-center">
             <Button
               onClick={() => router.push("/dashboard/userform")}
               className="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-colors"
@@ -646,6 +650,44 @@ export default function AnalysisPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Resume Confirmation Modal - Rendered via Portal */}
+      {isMounted && showEditModal && createPortal(
+        <div 
+          className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm flex items-center justify-center z-[9999]"
+          onClick={() => setShowEditModal(false)}
+        >
+          <div 
+            className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              Edit & Improve Resume
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              We will use our professional resume template instead of your original format. Continue?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button
+                onClick={() => setShowEditModal(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowEditModal(false);
+                  router.push(`/dashboard/resumebuilder/build?analysisId=${id}`);
+                }}
+                className="px-4 py-2 bg-violet-600 text-white hover:bg-violet-700"
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   );
 }
