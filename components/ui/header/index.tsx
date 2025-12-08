@@ -12,20 +12,17 @@ import { usePathname } from "next/navigation";
 export const Header = () => {
   const pathname = usePathname();
 
-  const [showDashboard, setShowDashboard] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     if (pathname === "/") {
-      setShowDashboard(true);
       setShowLogin(true);
       setShowSignup(true);
       setIsAuthenticated(false);
     } else if (pathname.startsWith("/dashboard")) {
       // User is on dashboard - show logout
-      setShowDashboard(false);
       setShowLogin(false);
       setShowSignup(false);
       setIsAuthenticated(true);
@@ -34,9 +31,15 @@ export const Header = () => {
 
   const router = useRouter();
 
-  const handleDashboardClick = () => {
-    router.push("/dashboard");
-    setShowDashboard(false);
+  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+    e.preventDefault();
+    const element = document.getElementById(targetId);
+    if (element) {
+      element.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
   };
   const handleLoginClick = () => {
     setShowLogin(false);
@@ -50,7 +53,8 @@ export const Header = () => {
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/sign-in");
+      // Use window.location for hard redirect to ensure cookie is cleared
+      window.location.href = "/sign-in";
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -58,27 +62,29 @@ export const Header = () => {
 
   return (
     <header className="bg-gray-50 sticky top-0">
-      <div className="container mx-auto flex justify-between py-4">
-        <div className="py-2 font-bold">{Strings.appName}</div>
-        {showDashboard && (
-          <div className="py-2">
-            <Link href="#features" className="py-2">
-              {Strings.features}
-            </Link>
-            <Link href="#how-it-works" className="py-2 mx-4">
-              {Strings.howItWorks}
-            </Link>
-            <button
-              onClick={handleDashboardClick}
-              className="active bg-trasparent p-0 text-current border-none shadow-none cursor-pointer focus:outline-none hover:bg-transparent hover:text-current"
+      <div className="container mx-auto flex justify-between items-center py-3">
+        <div className="font-bold">{Strings.appName}</div>
+        {pathname === "/" && (
+          <div className="flex items-center gap-12">
+            <a 
+              href="#features" 
+              onClick={(e) => handleSmoothScroll(e, "features")}
+              className="cursor-pointer hover:text-violet-600 transition-colors text-base font-medium px-2"
             >
-              {Strings.dashboard}
-            </button>
+              {Strings.features}
+            </a>
+            <a 
+              href="#how-it-works" 
+              onClick={(e) => handleSmoothScroll(e, "how-it-works")}
+              className="cursor-pointer hover:text-violet-600 transition-colors text-base font-medium px-2"
+            >
+              {Strings.howItWorks}
+            </a>
           </div>
         )}
         <div className="flex items-center gap-4">
-          {showDashboard && (
-            <Link href={"/sign-in"} className="mr-4">
+          {pathname === "/" && (
+            <Link href={"/sign-in"} className="mr-4 hover:text-violet-600 transition-colors">
               {Strings.logIn}
             </Link>
           )}

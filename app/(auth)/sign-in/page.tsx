@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -9,6 +9,11 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Clear any error state when component mounts (e.g., after logout)
+  useEffect(() => {
+    setError("");
+  }, []);
 
   const router = useRouter();
 
@@ -23,19 +28,98 @@ export default function SignInPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        credentials: "include", // Ensure cookies are sent and received
+        redirect: "manual", // Don't automatically follow redirects
       });
 
-      const data = await response.json();
+      console.log("Login response status:", response.status, "StatusText:", response.statusText);
+      console.log("Response ok:", response.ok);
+      console.log("Response type:", response.type);
 
-      if (!response.ok) {
-        setError(data.error || "An error occurred");
+      // Check if response is a redirect (status 307/308 or opaqueredirect type) - this means success!
+      // When using redirect: "manual", redirects appear as type "opaqueredirect" with status 0
+      if (response.type === "opaqueredirect" || response.status === 307 || response.status === 308) {
+        // Server is handling the redirect with cookie set, follow it
+        // With opaqueredirect, we can't access headers, so use /dashboard as default
+        let redirectUrl = "/dashboard";
+        
+        // Try to get Location header if available (only works for non-opaque redirects)
+        if (response.type !== "opaqueredirect") {
+          try {
+            const location = response.headers.get("Location");
+            console.log("Login redirect - Location header:", location);
+            if (location) {
+              // If Location is a full URL, extract the path, otherwise use as-is
+              redirectUrl = location.startsWith("http") 
+                ? new URL(location).pathname 
+                : location;
+            }
+          } catch (e) {
+            // If we can't parse the Location header, default to /dashboard
+            console.log("Could not parse Location header, using /dashboard", e);
+          }
+        } else {
+          console.log("Opaque redirect detected - using /dashboard as default");
+        }
+        
+        // Clear any previous errors and redirect immediately
+        setError("");
+        console.log("Login successful, redirecting to:", redirectUrl);
+        window.location.href = redirectUrl;
+        return; // Exit early - page will reload on redirect
+      }
+
+      // If not a redirect, check for errors
+      if (!response.ok && response.type !== "opaqueredirect") {
+        console.log("Login failed - Status:", response.status, "StatusText:", response.statusText);
+        // Handle different error status codes
+        if (response.status === 0 && response.type !== "opaqueredirect") {
+          // Network error or CORS issue (but not an opaque redirect)
+          setError("Network error. Please check your connection and try again.");
+        } else if (response.status >= 400 && response.status < 500) {
+          // Client errors (401, 400, etc.)
+          try {
+            const data = await response.json();
+            console.log("Login error data:", data);
+            setError(data.error || "Invalid email or password");
+          } catch (jsonError) {
+            // If JSON parsing fails, use status text or a default message
+            const errorMessage = response.statusText || "Invalid email or password";
+            console.log("Could not parse error JSON:", jsonError);
+            setError(`Login failed: ${errorMessage}`);
+          }
+        } else if (response.status >= 500) {
+          // Server errors (500+)
+          setError("Server error. Please try again later.");
+        } else {
+          // Unknown status code
+          setError(`Unexpected error (status: ${response.status}). Please try again.`);
+        }
+        setIsLoading(false);
         return;
       }
 
-      router.push("/dashboard");
+      // If response is OK (200) but not a redirect, try to parse JSON
+      try {
+        const data = await response.json();
+        if (data.message === "Login successful") {
+          // Wait a moment for cookie to be set, then redirect
+          setTimeout(() => {
+            window.location.href = "/dashboard";
+          }, 100);
+        }
+      } catch (jsonError) {
+        // If JSON parsing fails but status is OK, assume success and redirect
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 100);
+      }
     } catch (err: any) {
       setError(err.message || "An error occurred");
+      setIsLoading(false);
     } finally {
+      // Only set loading to false if we haven't already done so
+      // (redirects will cause a page reload, so state doesn't matter)
       setIsLoading(false);
     }
   };

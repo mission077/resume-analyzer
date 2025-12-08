@@ -45,16 +45,18 @@ export default function DashboardPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch("/api/auth/me");
+        const response = await fetch("/api/auth/me", {
+          credentials: "include", // Ensure cookies are sent
+        });
         if (!response.ok) {
-          router.push("/sign-in");
+          window.location.href = "/sign-in";
           return;
         }
         const data = await response.json();
         setUser(data.user);
       } catch (error) {
         console.error("Auth check failed:", error);
-        router.push("/sign-in");
+        window.location.href = "/sign-in";
       } finally {
         setIsLoading(false);
       }
@@ -418,7 +420,46 @@ export default function DashboardPage() {
                 </p>
               )}
             </div>
-            <div>
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={async () => {
+                  try {
+                    const response = await fetch("/api/auth/logout", { 
+                      method: "POST",
+                      credentials: "include",
+                      redirect: "manual"
+                    });
+                    // If logout returns a redirect, follow it
+                    if (response.status === 307 || response.status === 308) {
+                      const redirectUrl = response.headers.get("Location") || "/";
+                      window.location.href = redirectUrl;
+                    } else {
+                      // Fallback: redirect manually
+                      window.location.href = "/";
+                    }
+                  } catch (error) {
+                    console.error("Logout failed:", error);
+                    // Even if there's an error, try to redirect
+                    window.location.href = "/";
+                  }
+                }}
+                className="bg-red-500 hover:bg-red-600 text-white px-6"
+              >
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
+                </svg>
+                Logout
+              </Button>
               <Button className="md:inline-flex px-6 bg-violet-500 hover:bg-violet-600">
                 <Link href={"/dashboard/userform"}>{Strings.newAnalysis}</Link>
               </Button>
