@@ -623,7 +623,7 @@ export default function DashboardPage() {
 
                   {/* Action Buttons */}
                   <div className="flex gap-2">
-                    <Button className="flex-1 bg-violet-500 hover:bg-violet-600 text-white">
+                    <Button asChild className="flex-1 bg-violet-500 hover:bg-violet-600 text-white">
                       <Link href={`/dashboard/analysis/${analysis.id}`}>
                         View
                       </Link>

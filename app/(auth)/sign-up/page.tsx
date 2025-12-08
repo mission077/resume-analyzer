@@ -62,12 +62,9 @@ export default function SignUpPage() {
         <div className="text-center mb-8">
           <Link
             href="/"
-            className="inline-flex items-center space-x-2 text-gray-800 hover:text-purple-600 transition-colors"
+            className="inline-flex items-center text-gray-800 hover:text-purple-600 transition-colors"
           >
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-xl">R</span>
-            </div>
-            <span className="text-3xl font-bold">Resume Analyzer</span>
+            <span className="text-3xl font-bold">Resumize</span>
           </Link>
         </div>
 
