@@ -7,7 +7,6 @@ import { ResumeData, PersonalInfo, Education, Experience, Project, Skill, Certif
 import { Button } from "@/components/ui/button";
 import { SectionFeedback } from "@/services/analysis/resumeAnalyzer";
 
-
 // Extracurricular interface (not in types.ts yet)
 interface Extracurricular {
   id: string;

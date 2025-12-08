@@ -281,7 +281,7 @@ export default function PreviewPage() {
                 "Download PDF"
               )}
             </Button>
-            <Button
+            {/* <Button
               onClick={handleSave}
               disabled={isSaving}
               className="bg-violet-500 text-white hover:bg-violet-600 disabled:opacity-50"
@@ -312,7 +312,7 @@ export default function PreviewPage() {
               ) : (
                 "Save Resume"
               )}
-            </Button>
+            </Button> */}
           </div>
         </div>
       </div>

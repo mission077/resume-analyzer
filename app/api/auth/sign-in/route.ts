@@ -11,11 +11,14 @@ export async function POST(req: NextRequest) {
     const { email, password } = await req.json();
 
     if (!email || !password) {
+      console.log("[Sign-in API] Missing email or password");
       return NextResponse.json(
         { error: "Email and password are required" },
         { status: 400 }
       );
     }
+
+    console.log("[Sign-in API] Attempting login for:", email);
 
     // Find user in PostgreSQL
     const result = await pool.query("SELECT * FROM users WHERE email = $1", [
@@ -23,6 +26,7 @@ export async function POST(req: NextRequest) {
     ]);
 
     if (result.rows.length === 0) {
+      console.log("[Sign-in API] User not found:", email);
       return NextResponse.json(
         { error: "Invalid credentials" },
         { status: 401 }
@@ -35,6 +39,7 @@ export async function POST(req: NextRequest) {
     const isValid = await bcrypt.compare(password, user.password_hash);
 
     if (!isValid) {
+      console.log("[Sign-in API] Invalid password for:", email);
       return NextResponse.json(
         { error: "Invalid credentials" },
         { status: 401 }
@@ -51,22 +56,25 @@ export async function POST(req: NextRequest) {
       expiresIn: "7d",
     });
 
-    // Set cookie and return response
-    const response = NextResponse.json({
-      message: "Login successful",
-      user: { id: user.id, email: user.email },
-    });
+    console.log("[Sign-in API] Login successful for:", email, "Redirecting to dashboard");
 
+    // Create redirect response to dashboard with cookie set
+    const redirectUrl = new URL("/dashboard", req.url);
+    const response = NextResponse.redirect(redirectUrl);
+
+    // Set cookie in the redirect response
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
+      path: "/",
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
+    console.log("[Sign-in API] Cookie set, returning 307 redirect");
     return response;
   } catch (err: any) {
-    console.error("Login error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("[Sign-in API] Login error:", err);
+    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
   }
 }

@@ -6,7 +6,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
-export const appName = "ResumeIQ";
+export const appName = "Resumize";
 export const appTitle = "Craft resumes that pass ATS and impress hiring managers";
 export const appDesc = "ResumeIQ analyzes your resume for skills, keywords, and structure. Get actionable tips, optimization suggestions, and a score you can track over time.";
 export const getStarted = "Get Started";
