@@ -38,13 +38,17 @@ export default function SignInPage() {
 
       // Check if response is a redirect (status 307/308 or opaqueredirect type) - this means success!
       // When using redirect: "manual", redirects appear as type "opaqueredirect" with status 0
-      if (response.type === "opaqueredirect" || response.status === 307 || response.status === 308) {
+      // Note: TypeScript types don't include "opaqueredirect", but browsers return it
+      // Use string comparison to handle the actual browser behavior
+      // Declare once and reuse throughout the function
+      const isOpaqueRedirect = (response.type as string) === "opaqueredirect";
+      if (isOpaqueRedirect || response.status === 307 || response.status === 308) {
         // Server is handling the redirect with cookie set, follow it
         // With opaqueredirect, we can't access headers, so use /dashboard as default
         let redirectUrl = "/dashboard";
         
         // Try to get Location header if available (only works for non-opaque redirects)
-        if (response.type !== "opaqueredirect") {
+        if (!isOpaqueRedirect) {
           try {
             const location = response.headers.get("Location");
             console.log("Login redirect - Location header:", location);
@@ -70,10 +74,11 @@ export default function SignInPage() {
       }
 
       // If not a redirect, check for errors
-      if (!response.ok && response.type !== "opaqueredirect") {
+      // Reuse isOpaqueRedirect variable declared above
+      if (!response.ok && !isOpaqueRedirect) {
         console.log("Login failed - Status:", response.status, "StatusText:", response.statusText);
         // Handle different error status codes
-        if (response.status === 0 && response.type !== "opaqueredirect") {
+        if (response.status === 0 && !isOpaqueRedirect) {
           // Network error or CORS issue (but not an opaque redirect)
           setError("Network error. Please check your connection and try again.");
         } else if (response.status >= 400 && response.status < 500) {
