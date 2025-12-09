@@ -1,4 +1,4 @@
-# Resume Analyzer
+# RESUMIZE
 
 A web application that helps users analyze resumes for skills, experience, and other key metrics. Built using Next.js with Supabase for backend services and MarkItDown for PDF text extraction.
 
@@ -7,33 +7,8 @@ A web application that helps users analyze resumes for skills, experience, and o
 - Upload and analyze resumes (PDF and DOCX formats)
 - Extract key skills and experience automatically using MarkItDown
 - AI-powered resume analysis using Google Gemini AI
-- User authentication and authorization via Clerk
+- User authentication and authorization via JWT
 - Clean, responsive UI built with modern web technologies
-
-## Project Structure
-
-```
-resume-analyzer/
-├── app/                    # Next.js app directory
-│   ├── (auth)/            # Authentication routes
-│   ├── (dashboard)/        # Dashboard routes
-│   └── api/               # API routes
-│       └── resume/        # Resume processing endpoints
-│           ├── extract/   # Text extraction endpoint
-│           └── analyze/  # Analysis endpoint
-├── components/            # React components
-├── lib/                   # Utility functions
-│   └── llmParser.ts      # LLM JSON parsing utilities
-├── services/              # Service layer (business logic)
-│   ├── fileExtraction/   # File extraction services
-│   │   ├── pdfExtractor.ts
-│   │   └── docxExtractor.ts
-│   ├── analysis/          # Analysis services
-│   │   └── resumeAnalyzer.ts
-│   └── markitdown-api/    # FastAPI service for PDF conversion
-├── middleware.ts          # Next.js middleware
-└── package.json           # Node.js dependencies
-```
 
 ## Getting Started
 
@@ -48,79 +23,129 @@ resume-analyzer/
 - pip
 
 **Services:**
-- Supabase account for backend services
-- Clerk account for authentication
+- Docker and Docker Compose (recommended)
+- PostgreSQL database (included in Docker, or use external)
 - Google Generative AI API key for resume analysis
 
 ### Installation
 
-1. **Clone the repository:**
+#### Option 1: Using Docker (Recommended)
+
+1. **Install Docker and Docker Compose:**
+   - Download from [docker.com](https://www.docker.com/get-started)
+   - Ensure Docker Desktop is running
+
+2. **Clone the repository:**
 ```bash
 git clone https://github.com/mission077/resume-analyzer.git
 cd resume-analyzer
 ```
 
-2. **Install Node.js dependencies:**
+3. **Create a `.env.local` file** in the root directory with your credentials:
+
+```env
+# Database Configuration
+# Option 1: Use DATABASE_URL (for Vercel Postgres, Supabase, Neon, etc.)
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+
+# Option 2: Use individual connection parameters
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_password
+POSTGRES_DB=resume_analyzer
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_NAME=resume_analyzer
+DB_HOST=localhost
+DB_PORT=5432
+
+# Authentication
+JWT_SECRET=your-very-secure-random-secret-key-change-this
+NEXTAUTH_SECRET=another-random-secret-key-change-this
+
+# Google Generative AI
+GOOGLE_GENERATIVE_AI_API_KEY=your-gemini-api-key
+
+# Python Services URLs (for local development)
+MARKITDOWN_API_URL=http://localhost:8000
+NEXT_PUBLIC_LATEX_API_URL=http://localhost:8001
+```
+
+**Note**: For production, update `MARKITDOWN_API_URL` and `NEXT_PUBLIC_LATEX_API_URL` to your deployed service URLs.
+
+4. **Start all services with Docker:**
+```bash
+docker-compose up --build
+```
+
+This will automatically:
+- Set up PostgreSQL database
+- Build and run MarkItDown API service (port 8000)
+- Build and run LaTeX Compiler service (port 8001)
+- Build and run Next.js application (port 3000)
+- Run database migrations automatically on first startup (via `/docker-entrypoint-initdb.d`)
+
+**Note**: If you need to run migrations manually (e.g., after updating migration files):
+```bash
+docker-compose exec app psql $DATABASE_URL -f /app/migrations/001_init.sql
+docker-compose exec app psql $DATABASE_URL -f /app/migrations/002_add_resumes_table.sql
+docker-compose exec app psql $DATABASE_URL -f /app/migrations/003_add_comprehensive_analysis.sql
+```
+
+5. **Open your browser:**
+- Navigate to `http://localhost:3000`
+
+**To stop all services:**
+```bash
+docker-compose down
+```
+
+#### Option 2: Manual Setup (Without Docker)
+
+If you prefer to run services manually:
+
+1. **Install Node.js dependencies:**
 ```bash
 npm install
 ```
 
-3. **Set up MarkItDown API service:**
+2. **Set up Python services:**
 
+**MarkItDown API service:**
 ```bash
 cd services/markitdown-api
-
-# Create virtual environment with Python 3.12
 python3.12 -m venv venv
-
-# Activate virtual environment
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Upgrade pip
+source venv/bin/activate
 pip install --upgrade pip
-
-# Install dependencies
 pip install -r requirements.txt
 ```
 
-4. **Create a `.env.local` file** in the root directory with your credentials:
-
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
-
-# Clerk
-NEXT_PUBLIC_CLERK_FRONTEND_API=<your-clerk-frontend-api>
-CLERK_API_KEY=<your-clerk-api-key>
-
-# Google Generative AI
-GOOGLE_GENERATIVE_AI_API_KEY=<your-google-ai-api-key>
-
-# MarkItDown API (optional - defaults to http://localhost:8000)
-MARKITDOWN_API_URL=http://localhost:8000
-```
-
-### Running the Application
-
-1. **Start the MarkItDown API service** (in a separate terminal):
-
+**LaTeX Compiler service:**
 ```bash
-cd services/markitdown-api
+cd services/latex-compiler
+python3.12 -m venv venv
 source venv/bin/activate
-python main.py
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
-The service will run on `http://localhost:8000`
+**Note**: LaTeX Compiler requires LaTeX installed:
+- **macOS**: `brew install --cask mactex`
+- **Linux**: `sudo apt-get install texlive-full`
+- **Windows**: Install MiKTeX or TeX Live
 
-2. **Start the Next.js development server** (in another terminal):
+3. **Set up PostgreSQL database:**
+   - Install and start PostgreSQL
+   - Run migrations:
+   ```bash
+   psql $DATABASE_URL -f migrations/001_init.sql
+   psql $DATABASE_URL -f migrations/002_add_resumes_table.sql
+   psql $DATABASE_URL -f migrations/003_add_comprehensive_analysis.sql
+   ```
 
-```bash
-npm run dev
-```
-
-3. **Open your browser:**
-- Navigate to `http://localhost:3000` (or the port shown in terminal)
+4. **Start services:**
+   - MarkItDown API: `cd services/markitdown-api && source venv/bin/activate && python main.py`
+   - LaTeX Compiler: `cd services/latex-compiler && source venv/bin/activate && python main.py`
+   - Next.js: `npm run dev`
 
 ## How It Works
 
@@ -142,10 +167,11 @@ npm run dev
 - **React Dropzone** – File upload component
 
 ### Services
-- **Supabase** – Backend services including database
-- **Clerk** – User authentication and authorization
+- **PostgreSQL** – Database for user data and resume analyses
+- **JWT Authentication** – Secure user authentication with httpOnly cookies
 - **Google Gemini AI** – Resume analysis and insights
 - **MarkItDown** – PDF to text conversion (via FastAPI)
+- **LaTeX Compiler** – Professional PDF resume generation
 
 ### Python Service
 - **FastAPI** – Python web framework for MarkItDown API
@@ -154,20 +180,17 @@ npm run dev
 
 ## Development
 
-### Running MarkItDown Service
+### Running Services
 
-The MarkItDown service must be running for PDF processing to work:
-
+**With Docker (Recommended):**
 ```bash
-cd services/markitdown-api
-source venv/bin/activate
-python main.py
+docker-compose up --build
 ```
 
-Or with uvicorn directly:
-```bash
-uvicorn main:app --reload --port 8000
-```
+**Without Docker:**
+- MarkItDown Service: `cd services/markitdown-api && source venv/bin/activate && python main.py`
+- LaTeX Compiler: `cd services/latex-compiler && source venv/bin/activate && python main.py`
+- Next.js: `npm run dev`
 
 ### Testing
 
@@ -175,18 +198,36 @@ See `services/markitdown-api/TESTING.md` for detailed testing instructions.
 
 ## Troubleshooting
 
-### MarkItDown Service Not Running
+### Docker Issues
+- Ensure Docker Desktop is running
+- Check container status: `docker-compose ps`
+- View logs: `docker-compose logs [service-name]`
+- Rebuild containers: `docker-compose up --build`
+
+### MarkItDown Service Not Running (Manual Setup)
 - Ensure the FastAPI service is running on port 8000
 - Check that Python virtual environment is activated
 - Verify all dependencies are installed: `pip install -r requirements.txt`
 
+### LaTeX Compiler Service Not Running (Manual Setup)
+- Ensure the FastAPI service is running on port 8001
+- Verify LaTeX is installed on your system (`pdflatex --version`)
+- Check that Python virtual environment is activated
+- **Note**: With Docker, LaTeX is automatically installed in the container
+
 ### PDF Processing Fails
-- Check that `pdfminer-six` is installed in the virtual environment
+- Check that MarkItDown service is running
 - Verify the PDF file is not corrupted
 - Check FastAPI terminal for error messages
 
+### Database Connection Errors
+- Verify PostgreSQL is running
+- Check that `DATABASE_URL` or database connection parameters are correct
+- Ensure migrations have been run
+
 ### CORS Errors
-- Ensure your Next.js port is in the CORS allowed origins in `services/markitdown-api/main.py`
+- Ensure your Next.js port is in the `ALLOWED_ORIGINS` environment variable for Python services
+- Check `services/markitdown-api/main.py` and `services/latex-compiler/main.py`
 
 ## Contributing
 
@@ -199,5 +240,5 @@ See `services/markitdown-api/TESTING.md` for detailed testing instructions.
 
 ## License
 
-[Add your license here]
+MIT License
 
