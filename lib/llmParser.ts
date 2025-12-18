@@ -69,12 +69,15 @@ Job Description: ${jobDescription}
 
   return `You are an expert ATS (Applicant Tracking System) resume analyst and career advisor. Analyze the resume against the job description and provide comprehensive, actionable feedback that helps users directly edit their original resume.
 
-CRITICAL ETHICAL RULES - YOU MUST FOLLOW THESE:
-1. NEVER suggest adding information that isn't already implied or present in the resume
-2. ONLY reframe, reorganize, or ask questions to help users recall existing experience
-3. If a skill/technology isn't mentioned anywhere, ask a question rather than suggesting to add it
-4. For unclear sentences, suggest format improvements (Role + Metrics + Consequences) but use only information from the resume
-5. Do NOT create or invent new information - only work with what's already there
+CRITICAL ANTI-HALLUCINATION RULES - YOU MUST FOLLOW THESE STRICTLY (NO EXCEPTIONS):
+1. NEVER suggest adding information that isn't already implied or present in the resume text provided above
+2. NEVER invent, create, or fabricate any information not explicitly stated in the resume
+3. ONLY reframe, reorganize, or ask questions to help users recall existing experience - NEVER suggest new content
+4. If a skill/technology isn't mentioned anywhere in the resume, ask a question rather than suggesting to add it (e.g., "Did you use [technology] in [project]? If so, mention it explicitly")
+5. For unclear sentences, suggest format improvements (Role + Metrics + Consequences) but use ONLY information from the resume text
+6. Do NOT create or invent new information - only work with what's already there
+7. When referencing experiences, projects, or skills, ONLY reference what is actually written in the resume text above
+8. If you cannot find evidence in the resume text, ask a question instead of making assumptions
 
 ${jobContext}Resume Text:
 ${resumeText}
@@ -332,6 +335,125 @@ For section_feedback:
 
 Hints should be question-based and fact-based, not generic. Ask questions about existing content, suggest format improvements, or help reframe existing information. NEVER suggest adding new information. Include questions about keywords from missing_keywords when relevant to that section, but only if related experience exists in that section.
 
-Return ONLY the JSON object, nothing else.`
+Return ONLY the JSON object, nothing else.
+`
 }
 
+/**
+ * Creates a prompt for live feedback on a specific section
+ * Handles two scenarios:
+ * 1. From scratch: Only uses what user typed, no job context
+ * 2. From analysis: Uses resume context + job description
+ */
+export function createLiveFeedbackPrompt(
+  sectionName: string,
+  sectionContent: string,
+  fullResumeContext?: string,
+  jobContext?: {
+    companyName?: string
+    jobTitle?: string
+    jobDescription?: string
+  }
+): string {
+  const hasJobContext = jobContext?.companyName && jobContext?.jobTitle && jobContext?.jobDescription
+  const hasResumeContext = !!fullResumeContext && fullResumeContext.trim().length > 0
+
+  // Scenario 1: From scratch - only what user typed
+  if (!hasJobContext && !hasResumeContext) {
+    return `You are an expert resume advisor helping a user fill out their resume from scratch. Provide constructive, encouraging feedback on the ${sectionName} section they are currently filling out.
+
+CRITICAL ANTI-HALLUCINATION RULES - YOU MUST FOLLOW THESE STRICTLY (NO EXCEPTIONS):
+1. ONLY provide feedback on what the user has actually typed in the section content below - do NOT suggest adding information they haven't mentioned
+2. NEVER invent, create, or fabricate any information not explicitly typed by the user
+3. Guide them on format, structure, and best practices for this section (format guidance only)
+4. Ask questions to help them think about what to include, but NEVER suggest specific content they should add
+5. If content is too short or incomplete, suggest what types of information are typically included in this section (format guidance only, no specific examples)
+6. Keep feedback encouraging and constructive
+7. Do NOT hallucinate or invent information - only work with what the user has typed
+8. When giving examples, use generic format examples, NOT specific content suggestions
+
+${sectionName} Section Content:
+${sectionContent || '(empty or very minimal content)'}
+
+Provide feedback in this JSON format:
+{
+  "status": <"alert" | "warning" | "safe" | "incomplete">,
+  "feedback": "<1-2 sentence summary of the section's current state>",
+  "hints": [
+    "<Format/structure guidance question or suggestion - e.g. 'Consider adding [type of info] to strengthen this section' or 'Your [field] looks good - have you considered including [format suggestion]?'>",
+    "<Another helpful hint about format or structure>"
+  ],
+  "suggestions": [
+    "<Question-based format suggestion - e.g. 'For [field], consider using this format: [example format]' or 'Have you thought about including [type of information]?'>"
+  ]
+}
+
+Status meanings:
+- "incomplete": Section is empty or has minimal content (guide on what to include)
+- "alert": Section has issues that need attention (format, missing required fields)
+- "warning": Section could be improved but is acceptable
+- "safe": Section looks good
+
+Return ONLY the JSON object, nothing else.`
+  }
+
+  // Scenario 2: From analysis - has job context and/or resume context
+  const jobContextText = hasJobContext
+    ? `Job Context:
+Company: ${jobContext.companyName}
+Job Title: ${jobContext.jobTitle}
+Job Description: ${jobContext.jobDescription}
+
+`
+    : ''
+
+  const resumeContextText = hasResumeContext
+    ? `Full Resume Context (for reference - user is editing the ${sectionName} section):
+${fullResumeContext}
+
+`
+    : ''
+
+  return `You are an expert ATS resume analyst providing live feedback as a user edits their resume. The user is currently working on the ${sectionName} section. Provide specific, actionable feedback that helps them improve this section.
+
+CRITICAL ANTI-HALLUCINATION RULES - YOU MUST FOLLOW THESE STRICTLY (NO EXCEPTIONS):
+1. ONLY provide feedback on what the user has actually typed in the current ${sectionName} section content below
+2. NEVER suggest adding information that isn't already present in the section content OR in the resume context provided above
+3. NEVER invent, create, or fabricate any information not explicitly stated in the section content or resume context
+4. If suggesting improvements, ONLY reframe or reorganize existing content - do NOT add new information
+5. Ask questions about existing content rather than suggesting new content (e.g., "Did you use [tech] in [experience]? If so, mention it explicitly")
+6. For format improvements, use ONLY information from the resume context or current section content
+7. Do NOT hallucinate or invent information - only work with what's provided
+8. When referencing other sections, ONLY reference what is actually written in the resume context above
+9. If you cannot find evidence in the provided content, ask a question instead of making assumptions
+
+${jobContextText}${resumeContextText}Current ${sectionName} Section Content:
+${sectionContent || '(empty or very minimal content)'}
+
+Provide feedback in this JSON format:
+{
+  "status": <"alert" | "warning" | "safe" | "incomplete">,
+  "feedback": "<1-2 sentence summary focusing on alignment with job requirements and ATS optimization>",
+  "hints": [
+    "<Question-based hint referencing existing content - e.g. 'Did you use [technology] in [experience]? If so, mention it explicitly here' OR 'Your [existing content] relates to [job requirement] - consider emphasizing this connection'>",
+    "<Another actionable hint based on job context and existing content>"
+  ],
+  "suggestions": [
+    "<Format or reframing suggestion using existing content - e.g. 'Consider reframing your [existing point] to highlight [job-relevant aspect]' OR 'Your [existing content] could be strengthened by following Role + Metrics + Consequences format'>"
+  ]
+}
+
+Status meanings:
+- "incomplete": Section is empty or has minimal content
+- "alert": Section has significant issues or missing critical job-relevant information
+- "warning": Section could be improved to better align with job requirements
+- "safe": Section looks good and aligns well with job requirements
+
+Focus on:
+- ATS keyword optimization (if job context provided)
+- Format and structure improvements
+- Alignment with job requirements (if job context provided)
+- Using existing content more effectively
+
+Return ONLY the JSON object, nothing else.`
+}

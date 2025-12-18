@@ -6,6 +6,9 @@ import { useEffect, useState, useRef, Suspense } from "react";
 import { ResumeData, PersonalInfo, Education, Experience, Project, Skill, Certification } from "@/lib/resume/types";
 import { Button } from "@/components/ui/button";
 import { SectionFeedback } from "@/services/analysis/resumeAnalyzer";
+import { useLiveFeedback } from "@/hooks/useLiveFeedback";
+import { LiveFeedbackModal } from "@/components/resumebuilder/LiveFeedbackModal";
+import { SectionFeedbackBadge } from "@/components/resumebuilder/SectionFeedbackBadge";
 
 // Extracurricular interface (not in types.ts yet)
 interface Extracurricular {
@@ -59,8 +62,20 @@ function BuildResumePageContent() {
   // Ref to track if component is mounted (for async operations)
   const isMountedRef = useRef(true);
   
-  // Section feedback state
+  // Section feedback state (from analysis)
   const [sectionFeedback, setSectionFeedback] = useState<SectionFeedback[]>([]);
+  
+  // Live feedback state
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [isFeedbackPanelOpen, setIsFeedbackPanelOpen] = useState(false);
+  const [analysisContext, setAnalysisContext] = useState<{
+    resumeText?: string;
+    jobContext?: {
+      companyName?: string;
+      jobTitle?: string;
+      jobDescription?: string;
+    };
+  }>({});
   
   // Skills object state (must be declared before useEffect that uses setSkillsObject)
   const [skillsObject, setSkillsObject] = useState<Record<string, string>>({
@@ -215,6 +230,16 @@ function BuildResumePageContent() {
         }
 
         console.log("📄 Resume text extracted, length:", resumeText.length);
+
+        // Store analysis context for live feedback
+        setAnalysisContext({
+          resumeText: resumeText,
+          jobContext: {
+            companyName: analysis.company_name || undefined,
+            jobTitle: analysis.job_title || undefined,
+            jobDescription: analysis.job_description || undefined,
+          }
+        });
 
         // Extract section_feedback from analysis.analysis.section_feedback
         let extractedSectionFeedback: SectionFeedback[] = [];
@@ -813,9 +838,178 @@ function BuildResumePageContent() {
     }));
   };
 
-  // Helper to get feedback for a section
+  // Helper to get feedback for a section (from analysis)
   const getFeedbackForSection = (section: SectionFeedback['section']): SectionFeedback | null => {
     return sectionFeedback.find(sf => sf.section === section && (sf.status === 'alert' || sf.status === 'warning')) || null;
+  };
+
+  // Helper functions to convert section data to strings for live feedback
+  const getPersonalInfoContent = (): string => {
+    const info = formData.personalInfo;
+    return [
+      info.firstName,
+      info.lastName,
+      info.email,
+      info.phone,
+      info.linkedin,
+      info.github,
+      info.website
+    ].filter(Boolean).join(' ');
+  };
+
+  const getExperiencesContent = (): string => {
+    if (!formData.experiences || formData.experiences.length === 0) {
+      return '';
+    }
+    return formData.experiences.map(exp => {
+      const bullets = Array.isArray(exp.description) 
+        ? exp.description.filter(b => b && b.trim().length > 0).join(' ') 
+        : exp.description || '';
+      const parts = [
+        exp.role || '',
+        exp.company || '',
+        exp.location || '',
+        exp.startDate || '',
+        exp.endDate || (exp.isCurrent ? 'Present' : ''),
+        bullets
+      ].filter(p => p && p.trim().length > 0);
+      return parts.join(' ');
+    }).filter(content => content.trim().length > 0).join(' | ');
+  };
+
+  const getEducationContent = (): string => {
+    return formData.education.map(edu => {
+      const achievements = Array.isArray(edu.academicAchievements) ? edu.academicAchievements.join(' ') : '';
+      return `${edu.degree} in ${edu.field} at ${edu.school} ${edu.location} ${edu.graduationDate} ${edu.gpa} ${achievements}`;
+    }).join(' ');
+  };
+
+  const getProjectsContent = (): string => {
+    return formData.projects.map(proj => {
+      const techStack = Array.isArray(proj.techStack) ? proj.techStack.join(', ') : '';
+      const description = Array.isArray(proj.description) ? proj.description.join(' ') : proj.description || '';
+      return `${proj.name} ${techStack} ${description}`;
+    }).join(' ');
+  };
+
+  const getSkillsContent = (): string => {
+    return Object.entries(skillsObject)
+      .filter(([_, value]) => value.trim().length > 0)
+      .map(([category, skills]) => `${category}: ${skills}`)
+      .join(' ');
+  };
+
+  const getCertificationsContent = (): string => {
+    return formData.certifications.map(cert => {
+      return `${cert.name} from ${cert.issuer} ${cert.date} ${cert.credentialId || ''} ${cert.url || ''}`;
+    }).join(' ');
+  };
+
+  const getExtracurricularsContent = (): string => {
+    return formData.extracurriculars.map(extra => {
+      const bullets = Array.isArray(extra.bullets) ? extra.bullets.join(' ') : '';
+      return `${extra.title} ${extra.organization} ${extra.role} ${extra.startDate} ${extra.endDate || 'Present'} ${extra.description} ${bullets}`;
+    }).join(' ');
+  };
+
+  // Live feedback hooks for each section - always enabled to fetch feedback as user types
+  const personalInfoFeedback = useLiveFeedback({
+    sectionName: 'personalInfo',
+    sectionContent: getPersonalInfoContent(),
+    fullResumeContext: analysisContext.resumeText,
+    jobContext: analysisContext.jobContext,
+    enabled: true
+  });
+
+  const experiencesFeedback = useLiveFeedback({
+    sectionName: 'experiences',
+    sectionContent: getExperiencesContent(),
+    fullResumeContext: analysisContext.resumeText,
+    jobContext: analysisContext.jobContext,
+    enabled: true
+  });
+
+  const educationFeedback = useLiveFeedback({
+    sectionName: 'education',
+    sectionContent: getEducationContent(),
+    fullResumeContext: analysisContext.resumeText,
+    jobContext: analysisContext.jobContext,
+    enabled: true
+  });
+
+  const projectsFeedback = useLiveFeedback({
+    sectionName: 'projects',
+    sectionContent: getProjectsContent(),
+    fullResumeContext: analysisContext.resumeText,
+    jobContext: analysisContext.jobContext,
+    enabled: true
+  });
+
+  const skillsFeedback = useLiveFeedback({
+    sectionName: 'skills',
+    sectionContent: getSkillsContent(),
+    fullResumeContext: analysisContext.resumeText,
+    jobContext: analysisContext.jobContext,
+    enabled: true
+  });
+
+  const certificationsFeedback = useLiveFeedback({
+    sectionName: 'certifications',
+    sectionContent: getCertificationsContent(),
+    fullResumeContext: analysisContext.resumeText,
+    jobContext: analysisContext.jobContext,
+    enabled: true
+  });
+
+  const extracurricularsFeedback = useLiveFeedback({
+    sectionName: 'extracurriculars',
+    sectionContent: getExtracurricularsContent(),
+    fullResumeContext: analysisContext.resumeText,
+    jobContext: analysisContext.jobContext,
+    enabled: true
+  });
+
+  // Get current section feedback based on active section
+  const getCurrentSectionFeedback = () => {
+    switch (activeSection) {
+      case 'personalInfo':
+        return personalInfoFeedback.feedback;
+      case 'experiences':
+        return experiencesFeedback.feedback;
+      case 'education':
+        return educationFeedback.feedback;
+      case 'projects':
+        return projectsFeedback.feedback;
+      case 'skills':
+        return skillsFeedback.feedback;
+      case 'certifications':
+        return certificationsFeedback.feedback;
+      case 'extracurriculars':
+        return extracurricularsFeedback.feedback;
+      default:
+        return null;
+    }
+  };
+
+  const getCurrentSectionLoading = () => {
+    switch (activeSection) {
+      case 'personalInfo':
+        return personalInfoFeedback.isLoading;
+      case 'experiences':
+        return experiencesFeedback.isLoading;
+      case 'education':
+        return educationFeedback.isLoading;
+      case 'projects':
+        return projectsFeedback.isLoading;
+      case 'skills':
+        return skillsFeedback.isLoading;
+      case 'certifications':
+        return certificationsFeedback.isLoading;
+      case 'extracurriculars':
+        return extracurricularsFeedback.isLoading;
+      default:
+        return false;
+    }
   };
 
   return (
@@ -886,7 +1080,7 @@ function BuildResumePageContent() {
 
           {/* Personal Information Section */}
           <div 
-            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white ${
+            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white transition-colors ${
               !isPrefilling && getFeedbackForSection('personalInfo')?.status === 'alert' 
                 ? 'border-red-500' 
                 : !isPrefilling && getFeedbackForSection('personalInfo')?.status === 'warning'
@@ -894,54 +1088,68 @@ function BuildResumePageContent() {
                 : 'border-gray-200'
             }`}
           >
-            <div className="flex items-center gap-2 mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Personal Information
-              </h2>
-              {!isPrefilling && getFeedbackForSection('personalInfo') && (
-                <div className="relative group/icon">
-                  <svg 
-                    className="w-5 h-5 text-gray-600" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
-                    />
-                  </svg>
-                  
-                  {/* Hover Tooltip - appears from question mark icon */}
-                  <div className={`absolute left-0 bottom-full mb-2 w-[600px] max-h-[400px] overflow-y-auto bg-white border-2 rounded-lg shadow-xl p-5 z-50 opacity-0 pointer-events-none transition-opacity duration-200 group-hover/icon:opacity-100 ${
-                    getFeedbackForSection('personalInfo')?.status === 'alert' 
-                      ? 'border-red-500' 
-                      : 'border-yellow-500'
-                  }`}>
-                    <div className={`absolute -bottom-2 left-4 w-4 h-4 bg-white border-r-2 border-b-2 transform rotate-45 ${
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Personal Information
+                </h2>
+                {/* Analysis feedback badge (from initial analysis) */}
+                {!isPrefilling && getFeedbackForSection('personalInfo') && (
+                  <div className="relative group/icon">
+                    <svg 
+                      className="w-5 h-5 text-gray-600" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                      />
+                    </svg>
+                    
+                    {/* Hover Tooltip - appears from question mark icon */}
+                    <div className={`absolute left-0 bottom-full mb-2 w-[600px] max-h-[400px] overflow-y-auto bg-white border-2 rounded-lg shadow-xl p-5 z-50 opacity-0 pointer-events-none transition-opacity duration-200 group-hover/icon:opacity-100 ${
                       getFeedbackForSection('personalInfo')?.status === 'alert' 
                         ? 'border-red-500' 
                         : 'border-yellow-500'
-                    }`}></div>
-                    <div className="relative">
-                      <p className="font-semibold mb-2 text-gray-900">{getFeedbackForSection('personalInfo')?.feedback}</p>
-                      {getFeedbackForSection('personalInfo')?.hints && getFeedbackForSection('personalInfo')!.hints.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-gray-300">
-                          <p className="font-semibold mb-2 text-xs uppercase tracking-wide text-gray-700">Questions to Consider:</p>
-                          <ul className="space-y-2">
-                            {getFeedbackForSection('personalInfo')!.hints.map((hint, index) => (
-                              <li key={index} className="text-sm leading-relaxed text-gray-700">
-                                • {hint}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                    }`}>
+                      <div className={`absolute -bottom-2 left-4 w-4 h-4 bg-white border-r-2 border-b-2 transform rotate-45 ${
+                        getFeedbackForSection('personalInfo')?.status === 'alert' 
+                          ? 'border-red-500' 
+                          : 'border-yellow-500'
+                      }`}></div>
+                      <div className="relative">
+                        <p className="font-semibold mb-2 text-gray-900">{getFeedbackForSection('personalInfo')?.feedback}</p>
+                        {getFeedbackForSection('personalInfo')?.hints && getFeedbackForSection('personalInfo')!.hints.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-300">
+                            <p className="font-semibold mb-2 text-xs uppercase tracking-wide text-gray-700">Questions to Consider:</p>
+                            <ul className="space-y-2">
+                              {getFeedbackForSection('personalInfo')!.hints.map((hint, index) => (
+                                <li key={index} className="text-sm leading-relaxed text-gray-700">
+                                  • {hint}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+              </div>
+              {/* Live feedback badge - only show when feedback is available */}
+              {(personalInfoFeedback.feedback || personalInfoFeedback.isLoading) && (
+                <SectionFeedbackBadge
+                  feedback={personalInfoFeedback.feedback}
+                  isLoading={personalInfoFeedback.isLoading}
+                  onClick={() => {
+                    setActiveSection('personalInfo');
+                    setIsFeedbackPanelOpen(true);
+                  }}
+                />
               )}
             </div>
 
@@ -1041,7 +1249,7 @@ function BuildResumePageContent() {
 
           {/* Experience Section */}
           <div 
-            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white ${
+            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white transition-colors ${
               !isPrefilling && getFeedbackForSection('experiences')?.status === 'alert' 
                 ? 'border-red-500' 
                 : !isPrefilling && getFeedbackForSection('experiences')?.status === 'warning'
@@ -1098,12 +1306,25 @@ function BuildResumePageContent() {
                   </div>
                 )}
               </div>
-              <Button
-                onClick={addExperience}
-                className="bg-violet-500 text-white hover:bg-violet-600"
-              >
-                + Add Experience
-              </Button>
+              <div className="flex items-center gap-3">
+                {/* Live feedback badge - only show when feedback is available */}
+                {(experiencesFeedback.feedback || experiencesFeedback.isLoading) && (
+                  <SectionFeedbackBadge
+                    feedback={experiencesFeedback.feedback}
+                    isLoading={experiencesFeedback.isLoading}
+                    onClick={() => {
+                      setActiveSection('experiences');
+                      setIsFeedbackPanelOpen(true);
+                    }}
+                  />
+                )}
+                <Button
+                  onClick={addExperience}
+                  className="bg-violet-500 text-white hover:bg-violet-600"
+                >
+                  + Add Experience
+                </Button>
+              </div>
             </div>
 
             {formData.experiences.length === 0 ? (
@@ -1306,10 +1527,10 @@ function BuildResumePageContent() {
           </div>
 
           {/* Education Section */}
-          <div 
-            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white ${
-              !isPrefilling && getFeedbackForSection('education')?.status === 'alert' 
-                ? 'border-red-500' 
+          <div
+            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white transition-colors ${
+              !isPrefilling && getFeedbackForSection('education')?.status === 'alert'
+                ? 'border-red-500'
                 : !isPrefilling && getFeedbackForSection('education')?.status === 'warning'
                 ? 'border-yellow-500'
                 : 'border-gray-200'
@@ -1364,6 +1585,19 @@ function BuildResumePageContent() {
                   </div>
                 )}
               </div>
+              {/* Live feedback badge - only show when feedback is available */}
+              {(educationFeedback.feedback || educationFeedback.isLoading) && (
+                <SectionFeedbackBadge
+                  feedback={educationFeedback.feedback}
+                  isLoading={educationFeedback.isLoading}
+                  onClick={() => {
+                    setActiveSection('education');
+                    setIsFeedbackPanelOpen(true);
+                  }}
+                />
+              )}
+            </div>
+            <div className="flex items-center justify-end mb-4">
               <Button
                 onClick={addEducation}
                 className="bg-violet-500 text-white hover:bg-violet-600"
@@ -1539,10 +1773,10 @@ function BuildResumePageContent() {
           </div>
 
           {/* Skills Section */}
-          <div 
-            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white ${
-              !isPrefilling && getFeedbackForSection('skills')?.status === 'alert' 
-                ? 'border-red-500' 
+          <div
+            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white transition-colors ${
+              !isPrefilling && getFeedbackForSection('skills')?.status === 'alert'
+                ? 'border-red-500'
                 : !isPrefilling && getFeedbackForSection('skills')?.status === 'warning'
                 ? 'border-yellow-500'
                 : 'border-gray-200'
@@ -1597,6 +1831,19 @@ function BuildResumePageContent() {
                   </div>
                 )}
               </div>
+              {/* Live feedback badge - only show when feedback is available */}
+              {(skillsFeedback.feedback || skillsFeedback.isLoading) && (
+                <SectionFeedbackBadge
+                  feedback={skillsFeedback.feedback}
+                  isLoading={skillsFeedback.isLoading}
+                  onClick={() => {
+                    setActiveSection('skills');
+                    setIsFeedbackPanelOpen(true);
+                  }}
+                />
+              )}
+            </div>
+            <div className="flex items-center justify-end mb-4">
               <Button
                 onClick={addCustomSkillCategory}
                 className="bg-violet-500 text-white hover:bg-violet-600"
@@ -1650,10 +1897,10 @@ function BuildResumePageContent() {
           </div>
 
           {/* Projects Section */}
-          <div 
-            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white ${
-              !isPrefilling && getFeedbackForSection('projects')?.status === 'alert' 
-                ? 'border-red-500' 
+          <div
+            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white transition-colors ${
+              !isPrefilling && getFeedbackForSection('projects')?.status === 'alert'
+                ? 'border-red-500'
                 : !isPrefilling && getFeedbackForSection('projects')?.status === 'warning'
                 ? 'border-yellow-500'
                 : 'border-gray-200'
@@ -1708,6 +1955,19 @@ function BuildResumePageContent() {
                   </div>
                 )}
               </div>
+              {/* Live feedback badge - only show when feedback is available */}
+              {(projectsFeedback.feedback || projectsFeedback.isLoading) && (
+                <SectionFeedbackBadge
+                  feedback={projectsFeedback.feedback}
+                  isLoading={projectsFeedback.isLoading}
+                  onClick={() => {
+                    setActiveSection('projects');
+                    setIsFeedbackPanelOpen(true);
+                  }}
+                />
+              )}
+            </div>
+            <div className="flex items-center justify-end mb-4">
               <Button
                 onClick={addProject}
                 className="bg-violet-500 text-white hover:bg-violet-600"
@@ -1849,10 +2109,10 @@ function BuildResumePageContent() {
           </div>
 
           {/* Certifications Section (Optional) */}
-          <div 
-            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white ${
-              !isPrefilling && getFeedbackForSection('certifications')?.status === 'alert' 
-                ? 'border-red-500' 
+          <div
+            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white transition-colors ${
+              !isPrefilling && getFeedbackForSection('certifications')?.status === 'alert'
+                ? 'border-red-500'
                 : !isPrefilling && getFeedbackForSection('certifications')?.status === 'warning'
                 ? 'border-yellow-500'
                 : 'border-gray-200'
@@ -1910,6 +2170,19 @@ function BuildResumePageContent() {
                   </div>
                 )}
               </div>
+              {/* Live feedback badge - only show when feedback is available */}
+              {(certificationsFeedback.feedback || certificationsFeedback.isLoading) && (
+                <SectionFeedbackBadge
+                  feedback={certificationsFeedback.feedback}
+                  isLoading={certificationsFeedback.isLoading}
+                  onClick={() => {
+                    setActiveSection('certifications');
+                    setIsFeedbackPanelOpen(true);
+                  }}
+                />
+              )}
+            </div>
+            <div className="flex items-center justify-end mb-4">
               <Button
                 onClick={addCertification}
                 className="bg-violet-500 text-white hover:bg-violet-600"
@@ -2042,10 +2315,10 @@ function BuildResumePageContent() {
           </div>
 
           {/* Extracurriculars Section (Optional) */}
-          <div 
-            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white ${
-              !isPrefilling && getFeedbackForSection('extracurriculars')?.status === 'alert' 
-                ? 'border-red-500' 
+          <div
+            className={`rounded-lg shadow-md border-2 p-6 mb-6 relative group bg-white transition-colors ${
+              !isPrefilling && getFeedbackForSection('extracurriculars')?.status === 'alert'
+                ? 'border-red-500'
                 : !isPrefilling && getFeedbackForSection('extracurriculars')?.status === 'warning'
                 ? 'border-yellow-500'
                 : 'border-gray-200'
@@ -2103,6 +2376,19 @@ function BuildResumePageContent() {
                   </div>
                 )}
               </div>
+              {/* Live feedback badge - only show when feedback is available */}
+              {(extracurricularsFeedback.feedback || extracurricularsFeedback.isLoading) && (
+                <SectionFeedbackBadge
+                  feedback={extracurricularsFeedback.feedback}
+                  isLoading={extracurricularsFeedback.isLoading}
+                  onClick={() => {
+                    setActiveSection('extracurriculars');
+                    setIsFeedbackPanelOpen(true);
+                  }}
+                />
+              )}
+            </div>
+            <div className="flex items-center justify-end mb-4">
               <Button
                 onClick={addExtracurricular}
                 className="bg-violet-500 text-white hover:bg-violet-600"
@@ -2463,6 +2749,18 @@ function BuildResumePageContent() {
           </div>
         </div>
       </div>
+
+      {/* Live Feedback Modal */}
+      <LiveFeedbackModal
+        feedback={getCurrentSectionFeedback()}
+        isLoading={getCurrentSectionLoading()}
+        sectionName={activeSection || ''}
+        isOpen={isFeedbackPanelOpen}
+        onClose={() => {
+          setIsFeedbackPanelOpen(false);
+          setActiveSection(null);
+        }}
+      />
     </>
   );
 }

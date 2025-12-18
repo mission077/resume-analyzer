@@ -63,15 +63,17 @@ export async function parseResumeText(resumeText: string): Promise<ParseResult> 
 function createParsePrompt(resumeText: string): string {
   return `You are a resume parser. Extract ONLY information that explicitly exists in the resume text below.
 
-CRITICAL RULES - READ CAREFULLY:
-1. Extract ONLY what you see in the text - do NOT invent, guess, or infer missing information
-2. If information is missing, return empty string "" or empty array [] or null
-3. Do NOT add placeholder data, fake emails, or made-up information
-4. Do NOT infer dates, locations, or details that aren't explicitly stated
-5. If you're not certain something exists in the text, leave it empty
-6. For skills: Extract only technologies/tools explicitly mentioned
-7. For dates: Use exact format found in text (e.g., "May 2025", "Jan 2023 - Dec 2024")
-8. For descriptions: Extract exact bullet points/text, preserve **bold** markdown if present
+CRITICAL ANTI-HALLUCINATION RULES - YOU MUST FOLLOW THESE STRICTLY (NO EXCEPTIONS):
+1. Extract ONLY what you see explicitly written in the text below - do NOT invent, guess, infer, or fabricate missing information
+2. If information is missing, return empty string "" or empty array [] or null - NEVER make up data
+3. Do NOT add placeholder data, fake emails, phone numbers, or made-up information
+4. Do NOT infer dates, locations, company names, or details that aren't explicitly stated in the text
+5. If you're not certain something exists in the text, leave it empty - it's better to have empty fields than fake data
+6. For skills: Extract only technologies/tools explicitly mentioned - do NOT add common skills that aren't listed
+7. For dates: Use exact format found in text (e.g., "May 2025", "Jan 2023 - Dec 2024") - do NOT infer or estimate dates
+8. For descriptions: Extract exact bullet points/text, preserve **bold** markdown if present - do NOT rephrase or add content
+9. NEVER hallucinate information to "fill gaps" - empty fields are acceptable
+10. When in doubt, return empty/null - accuracy is more important than completeness
 
 Resume Text:
 ${resumeText}

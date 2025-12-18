@@ -12,10 +12,20 @@ from pathlib import Path
 
 app = FastAPI(title="LaTeX Compiler API", version="1.0.0")
 
+# CORS origins - supports both local development and production
+# Set ALLOWED_ORIGINS environment variable in production (comma-separated)
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+if allowed_origins_env:
+    # Production: use environment variable
+    allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",")]
+else:
+    # Development: default localhost origins
+    allowed_origins = ["http://localhost:3000", "http://localhost:3003", "http://localhost:3004"]
+
 # Enable CORS for Next.js frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3003", "http://localhost:3004"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
